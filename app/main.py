@@ -1,6 +1,8 @@
-from dataclasses import asdict
-from flask import Flask, jsonify, render_template, request, Response, send_file
-from app.postgre_utils import get_answers, get_chat_bot_users, get_questions
+from flask import Flask, render_template, request, Response, send_file
+from sqlalchemy import inspect
+from sqlalchemy.orm import aliased
+from app.postgre_entities import ChatBotUser, Question, Answer
+from app.postgre_entities import Session
 
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
@@ -55,40 +57,79 @@ def hello_world():
 
 @app.route("/chatbot_users", methods=["GET"])
 def display_chat_bot_users():
-    users = get_chat_bot_users()
-    users_simple_types = [asdict(user) for user in users]
+    session = Session()
+    users = session.query(ChatBotUser).all()
+
+    mapper = inspect(ChatBotUser)
+
+    users_simple_types = [
+        {key: getattr(user_instance, key) for key in mapper.attrs.keys()}
+        for user_instance in users
+    ]
+    session.close()
     return render_template("json_template.html", json_data=users_simple_types)
 
 
 @app.route("/questions", methods=["GET"])
 def display_questions():
-    questions = get_questions()
-    questions_simple_types = [asdict(question) for question in questions]
+    session = Session()
+
+    questions = session.query(Question).all()
+    mapper = inspect(Question)
+
+    questions_simple_types = [
+        {key: getattr(question_instance, key) for key in mapper.attrs.keys()}
+        for question_instance in questions
+    ]
+
+    session.close()
     return render_template("json_template.html", json_data=questions_simple_types)
 
 
 @app.route("/answers", methods=["GET"])
 def display_answers():
-    answers = get_answers()
-    answers_simple_types = [asdict(answer) for answer in answers]
+    session = Session()
+
+    answers = session.query(Answer).all()
+    mapper = inspect(Answer)
+
+    answers_simple_types = [
+        {key: getattr(answer_instance, key) for key in mapper.attrs.keys()}
+        for answer_instance in answers
+    ]
     return render_template("json_template.html", json_data=answers_simple_types)
 
 
 @app.route("/q_and_a", methods=["GET"])
 def display_q_and_a():
-    answers = get_answers()
-    questions = get_questions()
-    answers_simple_types = [asdict(answer) for answer in answers]
-    questions_simple_types = [asdict(question) for question in questions]
+    session = Session()
+    question_user_alias = aliased(ChatBotUser)
 
-    q_a_pairs = []
-    for answer in answers_simple_types:
-        if answer["approved"]:
-            for question in questions_simple_types:
-                if answer["question_id"] == question["question_id"]:
-                    q_a_pairs.append({**answer, **question})
+    answer_user_alias = aliased(ChatBotUser)
 
-    return render_template("json_template.html", json_data=q_a_pairs)
+    # Query for questions and approved answers
+    questions_and_answers = (
+        session.query(Question, Answer, question_user_alias, answer_user_alias)
+        .join(Answer, Question.question_id == Answer.question_id)
+        .join(question_user_alias, Question.user_id == question_user_alias.user_id)
+        .join(answer_user_alias, Answer.user_id == answer_user_alias.user_id)
+        .filter(Answer.approved == True)
+        .all()
+    )
+
+    # Process results
+    result = []
+    for question, answer, question_user, answer_user in questions_and_answers:
+        result.append(
+            {
+                "question_user_name": question_user.name,
+                "question_text": question.question_text,
+                "answer_user_name": answer_user.name,
+                "answer_text": answer.answer_text,
+            }
+        )
+    session.close()
+    return render_template("json_template.html", json_data=result)
 
 
 @app.route("/", methods=["POST"])
