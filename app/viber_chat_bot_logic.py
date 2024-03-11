@@ -53,6 +53,8 @@ def parse_message(sender_viber_id, message_dict):
     sender = get_user_by_viber_id(session, sender_viber_id)
     message_text = message_dict["text"]
 
+    logging.debug("message dict", message_dict)
+
     if message_text.lower().startswith("klausi"):
         question = create_question(session, message_text, sender.user_id)
         new_text = f"Prašau atsakyti į klausimą :) {message_text}"
