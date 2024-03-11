@@ -59,11 +59,10 @@ def parse_message(sender_viber_id, message_dict):
     if message_text.lower().startswith("klausi"):
         question = create_question(session, message_text, sender.user_id)
         new_text = f"Prašau atsakyti į klausimą :) {message_text}"
-        tracking_data = question.to_json()
         recipients_list = get_all_users_except_excluded(session, [sender.user_id])
 
         session.close()
-        return (dict(text=new_text, tracking_data=tracking_data), recipients_list)
+        return (dict(text=new_text, tracking_data=question.to_json()), recipients_list)
     elif "tracking_data" in message_dict:
         tracking_data = json.loads(message_dict["tracking_data"])
         question_id, asked_user_id = (
@@ -78,7 +77,7 @@ def parse_message(sender_viber_id, message_dict):
         return (
             dict(
                 text=f"Gavote atsakyma. {answer.answer_text}",
-                tracking_data=tracking_data,
+                tracking_data=answer.to_json(),
             ),
             [asked_user],
         )
