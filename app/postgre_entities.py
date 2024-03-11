@@ -78,6 +78,19 @@ class Answer(Base):
     question = relationship("Question")
     user = relationship("ChatBotUser")
 
+    def to_json(self):
+        return json.dumps(
+            {
+                "answer_id": self.answer_id,
+                "question_id": self.question_id,
+                "user_id": self.user_id,
+                "approved": self.approved,
+                "created_at": str(
+                    self.created_at
+                ),  # Convert to string for JSON serialization
+            }
+        )
+
 
 def create_user(session, name, viber_id, active=True):
     user = ChatBotUser(
