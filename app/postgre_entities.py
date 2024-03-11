@@ -1,3 +1,4 @@
+import json
 import os
 from dotenv import load_dotenv
 
@@ -50,6 +51,17 @@ class Question(Base):
     created_at = Column(DateTime)
 
     user = relationship("ChatBotUser")
+
+    def to_json(self):
+        return json.dumps(
+            {
+                "question_id": self.question_id,
+                "user_id": self.user_id,
+                "created_at": str(
+                    self.created_at
+                ),  # Convert to string for JSON serialization
+            }
+        )
 
 
 # Define the Answer table

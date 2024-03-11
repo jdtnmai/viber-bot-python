@@ -3,6 +3,7 @@ from sqlalchemy import inspect
 from sqlalchemy.orm import aliased
 from app.postgre_entities import ChatBotUser, Question, Answer
 from app.postgre_entities import Session
+from app.viber_chat_bot_logic import parse_message
 
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
@@ -146,27 +147,20 @@ def incoming():
     viber_request = viber.parse_request(request.get_data().decode("utf8"))
     logger.debug("received request. post data: {0}".format(viber_request))
 
-    session = Session()
-    users = session.query(ChatBotUser).filter(ChatBotUser.active == True).all()
-
     if isinstance(viber_request, ViberMessageRequest):
         logger.debug(f"viber request user id :  {viber_request.sender.id}")
         logger.debug(f"message :  {viber_request.message}")
-        message_text = viber_request.message.text
-        message = TextMessage(
-            tracking_data=f"question_id==1, asked_user_id = 11", text=message_text
+        message_dict = viber_request.message.to_dict()
+        sender_viber_id = viber_request.sender.id
+        new_message, recipients_list = parse_message(
+            sender_viber_id,
+            message_dict,
         )
-        for user in users:
+        new_message = TextMessage(**new_message)
+        for user in recipients_list:
             logger.debug(f"chatbot users : {user.viber_id}")
-            sent_message_response = viber.send_messages(user.viber_id, [message])
+            sent_message_response = viber.send_messages(user.viber_id, [new_message])
             logger.debug(f"sent message response: {sent_message_response}")
-
-        # create new question.
-        # get_active_users
-        # send new question to active users
-        # get answers from users (create answers)
-        # share answers with user who sent the question, ask if user approves the question
-        # if approves, update the question answer as approved
 
     elif (
         isinstance(viber_request, ViberConversationStartedRequest)
