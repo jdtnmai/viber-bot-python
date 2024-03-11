@@ -132,15 +132,35 @@ def display_q_and_a():
     return render_template("json_template.html", json_data=result)
 
 
+@app.route("/foxbot_face")
+def show_foxbot_face():
+    # Imagine that user_image is determined dynamically for each user
+    face_path = "static/images/resized_foxbot_image.png"
+    return send_file(face_path, mimetype="image/png")
+
+
 @app.route("/", methods=["POST"])
 def incoming():
     logger.debug("received request. post data: {0}".format(request.get_data()))
 
     viber_request = viber.parse_request(request.get_data().decode("utf8"))
+    logger.debug("received request. post data: {0}".format(viber_request))
+
+    session = Session()
+    users = session.query(ChatBotUser).filter(ChatBotUser.active == True).all()
 
     if isinstance(viber_request, ViberMessageRequest):
         message = viber_request.message
-        viber.send_messages(viber_request.sender.id, [message])
+        for user in users:
+            viber.send_messages(user.viber_id, [message])
+
+        # create new question.
+        # get_active_users
+        # send new question to active users
+        # get answers from users (create answers)
+        # share answers with user who sent the question, ask if user approves the question
+        # if approves, update the question answer as approved
+
     elif (
         isinstance(viber_request, ViberConversationStartedRequest)
         or isinstance(viber_request, ViberSubscribedRequest)
@@ -156,10 +176,3 @@ def incoming():
         )
 
     return Response(status=200)
-
-
-@app.route("/foxbot_face")
-def show_foxbot_face():
-    # Imagine that user_image is determined dynamically for each user
-    face_path = "static/images/resized_foxbot_image.png"
-    return send_file(face_path, mimetype="image/png")
