@@ -9,6 +9,15 @@ from app.postgre_entities import (
 )
 from sqlalchemy import and_, not_
 
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
 
 def get_user_by_viber_id(session, viber_id):
     return (
@@ -51,18 +60,24 @@ def parse_message(sender_viber_id, message_dict):
         recipients_list = get_all_users_except_excluded(session, [sender.user_id])
 
         session.close()
-        return dict(text=new_text, tracking_data=tracking_data), recipients_list
+        return (dict(text=new_text, tracking_data=tracking_data), recipients_list)
     elif "tracking_data" in message_dict:
         tracking_data = json.loads(message_dict["tracking_data"])
         question_id, asked_user_id = (
             tracking_data["question_id"],
             tracking_data["user_id"],
         )
+        logger.debug(f"parsed tracking data {question_id, asked_user_id}")
         answer = create_answer(session, message_text, question_id, sender.user_id)
         asked_user = get_user_by_user_id(session, asked_user_id)
-        return dict(
-            text=f"Gavote atsakyma. {answer.answer_text}", tracking_data=tracking_data
-        ), [asked_user]
+        logger.debug(f"anwer response values : {answer.to_json()}, {asked_user}")
+        return (
+            dict(
+                text=f"Gavote atsakyma. {answer.answer_text}",
+                tracking_data=tracking_data,
+            ),
+            [asked_user],
+        )
     else:
         session.close()
         return ({"text": "ne klausimas", "tracking_data": "nothing to track"}, [sender])
