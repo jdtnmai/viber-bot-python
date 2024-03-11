@@ -74,6 +74,7 @@ def parse_message(sender_viber_id, message_dict):
         answer = create_answer(session, message_text, question_id, sender.user_id)
         asked_user = get_user_by_user_id(session, asked_user_id)
         logger.debug(f"answer response values : {answer.to_json()}, {asked_user}")
+        session.close()
         return (
             dict(
                 text=f"Gavote atsakyma. {answer.answer_text}",
