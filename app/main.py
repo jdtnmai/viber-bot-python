@@ -145,11 +145,14 @@ def incoming():
 
     viber_request = viber.parse_request(request.get_data().decode("utf8"))
     logger.debug("received request. post data: {0}".format(viber_request))
-    logger.debug(f"viber request user id :  {viber_request.sender.id}")
+
     session = Session()
     users = session.query(ChatBotUser).filter(ChatBotUser.active == True).all()
 
     if isinstance(viber_request, ViberMessageRequest):
+        logger.debug(f"viber request user id :  {viber_request.sender.id}")
+        logger.debug(f"message :  {viber_request.message}")
+
         message = viber_request.message
         for user in users:
             logger.debug(f"chatbot users : {user.viber_id}")
