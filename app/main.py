@@ -152,9 +152,10 @@ def incoming():
     if isinstance(viber_request, ViberMessageRequest):
         logger.debug(f"viber request user id :  {viber_request.sender.id}")
         logger.debug(f"message :  {viber_request.message}")
-
-        message = viber_request.message
-        message.tracking_data = "question_id=11"
+        message_text = viber_request.message.text
+        message = TextMessage(
+            tracking_data=f"question_id==1, asked_user_id = 11", text=message_text
+        )
         for user in users:
             logger.debug(f"chatbot users : {user.viber_id}")
             sent_message_response = viber.send_messages(user.viber_id, [message])
