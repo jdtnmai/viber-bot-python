@@ -54,6 +54,7 @@ def parse_message(sender_viber_id, message_dict):
     message_text = message_dict["text"]
 
     logging.debug("message dict", message_dict)
+    print("message dict", message_dict)
 
     if message_text.lower().startswith("klausi"):
         question = create_question(session, message_text, sender.user_id)
@@ -70,9 +71,10 @@ def parse_message(sender_viber_id, message_dict):
             tracking_data["user_id"],
         )
         logger.debug(f"parsed tracking data {question_id, asked_user_id}")
+        print(f"parsed tracking data {question_id, asked_user_id}")
         answer = create_answer(session, message_text, question_id, sender.user_id)
         asked_user = get_user_by_user_id(session, asked_user_id)
-        logger.debug(f"anwer response values : {answer.to_json()}, {asked_user}")
+        logger.debug(f"answer response values : {answer.to_json()}, {asked_user}")
         return (
             dict(
                 text=f"Gavote atsakyma. {answer.answer_text}",
