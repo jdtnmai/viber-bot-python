@@ -145,13 +145,14 @@ def incoming():
 
     viber_request = viber.parse_request(request.get_data().decode("utf8"))
     logger.debug("received request. post data: {0}".format(viber_request))
-    logger.debug(f"viber request user id :  {viber_request.user.id}")
+    logger.debug(f"viber request user id :  {viber_request.sender.id}")
     session = Session()
     users = session.query(ChatBotUser).filter(ChatBotUser.active == True).all()
 
     if isinstance(viber_request, ViberMessageRequest):
         message = viber_request.message
         for user in users:
+            logger.debug(f"chatbot users : {user.viber_id}")
             viber.send_messages(user.viber_id, [message])
 
         # create new question.
