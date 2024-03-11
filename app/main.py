@@ -154,11 +154,10 @@ def incoming():
         logger.debug(f"message :  {viber_request.message}")
 
         message = viber_request.message
+        message.tracking_data = "question_id=11"
         for user in users:
             logger.debug(f"chatbot users : {user.viber_id}")
-            sent_message_response = viber.send_messages(
-                user.viber_id, [message], tracking_data="question_id = 11"
-            )
+            sent_message_response = viber.send_messages(user.viber_id, [message])
             logger.debug(f"sent message response: {sent_message_response}")
 
         # create new question.
