@@ -68,7 +68,7 @@ def parse_tracking_data(message_dict):
     if "tracking_data" in message_dict.keys():
         tracking_data_json = message_dict["tracking_data"]
     else:
-        tracking_data_json = "{}"
+        return {}
 
     tracking_data = json.loads(tracking_data_json)
     logger.debug("dictionary returned tracking data", tracking_data)
