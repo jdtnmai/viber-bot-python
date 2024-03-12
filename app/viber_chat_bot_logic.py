@@ -1,6 +1,7 @@
 import json
 from app.postgre_entities import (
     ChatBotUser,
+    Question,
     create_question,
     create_answer,
 )
@@ -45,12 +46,83 @@ def get_all_users_except_excluded(session, excluded_user_ids: list):
     )
 
 
+def get_unanswered_questions(session):
+    return session.query(Question).filter(~Question.answers.any()).all()
+
+
+## Parse message
+"""
+1. get sender object
+2. get message intention
+    - question
+    - answer 
+    - has text? 
+    - has url? 
+    - has image? 
+3. parse tracking data json string
+"""
+
+
+def parse_tracking_data(message_dict):
+    tracking_data_json = message_dict.get("tracking_data", "{}")
+    tracking_data = json.loads(tracking_data_json)
+    return tracking_data
+
+
+def get_chat_bot_intention(message_dict):
+
+    text = message_dict.get("text").lower()
+    asking_question = text.startswith("klausimas")
+    asking_to_list_unanswered_questions = text.startswith("neatsakyti klausimai")
+
+    return dict(
+        asking_question=asking_question,
+        asking_to_list_unanswered_questions=asking_to_list_unanswered_questions,
+    )
+
+
+def get_message_media(message_dict):
+    media_link = message_dict.get("media", "")
+    return media_link
+
+
 def parse_message(session, sender_viber_id, message_dict):
+    intention = get_chat_bot_intention(message_dict)
+
     sender = get_user_by_viber_id(session, sender_viber_id)
+    tracking_data = parse_tracking_data(message_dict)
+
+    media_link = get_message_media(message_dict)
     message_text = message_dict["text"]
 
-    logging.debug("message dict", message_dict)
-    print("message dict", message_dict)
+    if intention["asking_question"]:  # "klausimas"
+        question = create_question(session, message_text, sender.user_id)
+
+        new_text = f"Prašau atsakyti į klausimą :) {message_text}"
+
+        messages_out = [dict(text=new_text, tracking_data=question.to_json())]
+
+        recipients_list = get_all_users_except_excluded(session, [sender.user_id])
+
+        return (
+            messages_out,
+            recipients_list,
+        )
+
+    elif intention["asking_to_list_unanswered_questions"]:  # "neatsakyti klausimai"
+        questions = get_unanswered_questions(session)
+
+        messages_out = [
+            {
+                "text": f"{question.question_id}. {question.question_text}",
+                "tracking_data": json.dumps(
+                    {"intention": "manual_answer", "question_id": question.question_id}
+                ),
+            }
+            for question in questions
+        ]
+        recipient_list = [sender]
+        return (messages_out, recipient_list)
 
     if message_text.lower().startswith("klausi"):
         question = create_question(session, message_text, sender.user_id)
