@@ -142,6 +142,7 @@ def show_foxbot_face():
 
 @app.route("/", methods=["POST"])
 def incoming():
+    session = Session()
     logger.debug("received request. post data: {0}".format(request.get_data()))
 
     viber_request = viber.parse_request(request.get_data().decode("utf8"))
@@ -153,6 +154,7 @@ def incoming():
         message_dict = viber_request.message.to_dict()
         sender_viber_id = viber_request.sender.id
         new_message, recipients_list = parse_message(
+            session,
             sender_viber_id,
             message_dict,
         )
@@ -176,4 +178,5 @@ def incoming():
             "client failed receiving message. failure: {0}".format(viber_request)
         )
 
+    session.close()
     return Response(status=200)

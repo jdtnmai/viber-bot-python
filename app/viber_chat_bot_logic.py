@@ -1,9 +1,6 @@
 import json
 from app.postgre_entities import (
     ChatBotUser,
-    Question,
-    Answer,
-    Session,
     create_question,
     create_answer,
 )
@@ -48,8 +45,7 @@ def get_all_users_except_excluded(session, excluded_user_ids: list):
     )
 
 
-def parse_message(sender_viber_id, message_dict):
-    session = Session()
+def parse_message(session, sender_viber_id, message_dict):
     sender = get_user_by_viber_id(session, sender_viber_id)
     message_text = message_dict["text"]
 
@@ -61,7 +57,6 @@ def parse_message(sender_viber_id, message_dict):
         new_text = f"Prašau atsakyti į klausimą :) {message_text}"
         recipients_list = get_all_users_except_excluded(session, [sender.user_id])
 
-        session.close()
         return (dict(text=new_text, tracking_data=question.to_json()), recipients_list)
     elif "tracking_data" in message_dict:
         tracking_data = json.loads(message_dict["tracking_data"])
@@ -74,7 +69,6 @@ def parse_message(sender_viber_id, message_dict):
         answer = create_answer(session, message_text, question_id, sender.user_id)
         asked_user = get_user_by_user_id(session, asked_user_id)
         logger.debug(f"answer response values : {answer.to_json()}, {asked_user}")
-        session.close()
         return (
             dict(
                 text=f"Gavote atsakyma. {answer.answer_text}",
@@ -83,5 +77,4 @@ def parse_message(sender_viber_id, message_dict):
             [asked_user],
         )
     else:
-        session.close()
         return ({"text": "ne klausimas", "tracking_data": "nothing to track"}, [sender])
