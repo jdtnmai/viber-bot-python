@@ -70,8 +70,8 @@ def parse_tracking_data(message_dict):
     else:
         tracking_data_json = "{}"
 
-    logger.debug("dictionary returned tracking data", tracking_data)
     tracking_data = json.loads(tracking_data_json)
+    logger.debug("dictionary returned tracking data", tracking_data)
     return tracking_data
 
 
