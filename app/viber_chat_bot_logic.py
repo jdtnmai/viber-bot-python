@@ -122,31 +122,37 @@ def parse_message(session, sender_viber_id, message_dict):
             for question in questions
         ]
         recipient_list = [sender]
-        return (messages_out, recipient_list)
-
-    if message_text.lower().startswith("klausi"):
-        question = create_question(session, message_text, sender.user_id)
-        new_text = f"Prašau atsakyti į klausimą :) {message_text}"
-        recipients_list = get_all_users_except_excluded(session, [sender.user_id])
-
-        return (dict(text=new_text, tracking_data=question.to_json()), recipients_list)
-    elif "tracking_data" in message_dict:
-        tracking_data = json.loads(message_dict["tracking_data"])
-        question_id, asked_user_id = (
-            tracking_data["question_id"],
-            tracking_data["user_id"],
-        )
-        logger.debug(f"parsed tracking data {question_id, asked_user_id}")
-        print(f"parsed tracking data {question_id, asked_user_id}")
-        answer = create_answer(session, message_text, question_id, sender.user_id)
-        asked_user = get_user_by_user_id(session, asked_user_id)
-        logger.debug(f"answer response values : {answer.to_json()}, {asked_user}")
         return (
-            dict(
-                text=f"Gavote atsakyma. {answer.answer_text}",
-                tracking_data=answer.to_json(),
-            ),
-            [asked_user],
+            messages_out,
+            recipient_list,
         )
+
+    # if message_text.lower().startswith("klausi"):
+    #     question = create_question(session, message_text, sender.user_id)
+    #     new_text = f"Prašau atsakyti į klausimą :) {message_text}"
+    #     recipients_list = get_all_users_except_excluded(session, [sender.user_id])
+
+    #     return (dict(text=new_text, tracking_data=question.to_json()), recipients_list)
+    # elif "tracking_data" in message_dict:
+    #     tracking_data = json.loads(message_dict["tracking_data"])
+    #     question_id, asked_user_id = (
+    #         tracking_data["question_id"],
+    #         tracking_data["user_id"],
+    #     )
+    #     logger.debug(f"parsed tracking data {question_id, asked_user_id}")
+    #     print(f"parsed tracking data {question_id, asked_user_id}")
+    #     answer = create_answer(session, message_text, question_id, sender.user_id)
+    #     asked_user = get_user_by_user_id(session, asked_user_id)
+    #     logger.debug(f"answer response values : {answer.to_json()}, {asked_user}")
+    #     return (
+    #         dict(
+    #             text=f"Gavote atsakyma. {answer.answer_text}",
+    #             tracking_data=answer.to_json(),
+    #         ),
+    #         [asked_user],
+    #     )
     else:
-        return ({"text": "ne klausimas", "tracking_data": "nothing to track"}, [sender])
+        return (
+            [{"text": "ne klausimas", "tracking_data": "nothing to track"}],
+            [sender],
+        )
