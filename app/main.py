@@ -3,6 +3,7 @@ from sqlalchemy import inspect
 from sqlalchemy.orm import aliased
 from app.postgre_entities import ChatBotUser, Question, Answer
 from app.postgre_entities import Session
+from app.viber_chat_bot_logic import parse_message
 
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
@@ -132,15 +133,37 @@ def display_q_and_a():
     return render_template("json_template.html", json_data=result)
 
 
+@app.route("/foxbot_face")
+def show_foxbot_face():
+    # Imagine that user_image is determined dynamically for each user
+    face_path = "static/images/resized_foxbot_image.png"
+    return send_file(face_path, mimetype="image/png")
+
+
 @app.route("/", methods=["POST"])
 def incoming():
+    session = Session()
     logger.debug("received request. post data: {0}".format(request.get_data()))
 
     viber_request = viber.parse_request(request.get_data().decode("utf8"))
+    logger.debug("received request. post data: {0}".format(viber_request))
 
     if isinstance(viber_request, ViberMessageRequest):
-        message = viber_request.message
-        viber.send_messages(viber_request.sender.id, [message])
+        logger.debug(f"viber request user id :  {viber_request.sender.id}")
+        logger.debug(f"message :  {viber_request.message}")
+        message_dict = viber_request.message.to_dict()
+        sender_viber_id = viber_request.sender.id
+        new_message, recipients_list = parse_message(
+            session,
+            sender_viber_id,
+            message_dict,
+        )
+        new_message = TextMessage(**new_message)
+        for user in recipients_list:
+            logger.debug(f"chatbot users : {user.viber_id}")
+            sent_message_response = viber.send_messages(user.viber_id, [new_message])
+            logger.debug(f"sent message response: {sent_message_response}")
+
     elif (
         isinstance(viber_request, ViberConversationStartedRequest)
         or isinstance(viber_request, ViberSubscribedRequest)
@@ -155,11 +178,5 @@ def incoming():
             "client failed receiving message. failure: {0}".format(viber_request)
         )
 
+    session.close()
     return Response(status=200)
-
-
-@app.route("/foxbot_face")
-def show_foxbot_face():
-    # Imagine that user_image is determined dynamically for each user
-    face_path = "static/images/resized_foxbot_image.png"
-    return send_file(face_path, mimetype="image/png")
