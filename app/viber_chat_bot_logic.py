@@ -159,6 +159,13 @@ def parse_message(session, sender_viber_id, message_dict):
     #     )
     else:
         return (
-            [{"text": "ne klausimas", "tracking_data": "nothing to track"}],
+            [
+                {
+                    "text": "ne klausimas",
+                    "tracking_data": json.dumps(
+                        {"tracking_message": "nothing to track"}
+                    ),
+                }
+            ],
             [sender],
         )
