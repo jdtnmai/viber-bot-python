@@ -153,12 +153,13 @@ def incoming():
         logger.debug(f"message :  {viber_request.message}")
         message_dict = viber_request.message.to_dict()
         sender_viber_id = viber_request.sender.id
-        new_messages, recipients_list = parse_message(
+        new_message_dicts, recipients_list = parse_message(
             session,
             sender_viber_id,
             message_dict,
         )
-        new_messages = [TextMessage(**new_message) for new_message in new_messages]
+        logger.debug("new_message_dicts", new_message_dicts)
+        new_messages = [TextMessage(**new_message) for new_message in new_message_dicts]
         for user in recipients_list:
             logger.debug(f"chatbot users : {user.viber_id}")
             sent_message_response = viber.send_messages(user.viber_id, new_messages)
