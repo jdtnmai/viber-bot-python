@@ -21,7 +21,7 @@ class ConversationStatus:
     status: str
     active_responder_id: int = None
     responders: List[int] = field(default_factory=list)
-    last_message_time: 0.0
+    last_message_time: float = 0.0
 
 
 class ConversationManager:
