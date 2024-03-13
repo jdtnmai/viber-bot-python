@@ -105,7 +105,7 @@ def parse_message(session, sender_viber_id, message_dict):
     logger.debug("entered parse_message")
     logger.debug(f"message_dict {message_dict}")
     intention = get_chat_bot_intention(message_dict)
-
+    logger
     sender = get_user_by_viber_id(session, sender_viber_id)
     tracking_data = parse_tracking_data(message_dict)
 
@@ -157,9 +157,12 @@ def parse_message(session, sender_viber_id, message_dict):
                     Pabaigus atsakymą atsiųskite žinutę xxx",
             "tracking_data": json.dumps({"tracking_message": "nothing to track"}),
         }
-
+        messages_out = [welcome_help_message]
         recipients_list = get_all_users_except_excluded(session, [sender.user_id])
-
+        return (
+            messages_out,
+            recipient_list,
+        )
     # if message_text.lower().startswith("klausi"):
     #     question = create_question(session, message_text, sender.user_id)
     #     new_text = f"Prašau atsakyti į klausimą :) {message_text}"
