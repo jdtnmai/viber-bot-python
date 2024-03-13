@@ -47,7 +47,7 @@ t.start()
 @app.route("/", methods=["GET"])
 def hello_world():
     logger.debug("called hello world")
-    return "Hello world!"
+    return render_template("index_template.html")
 
 
 @app.route("/chatbot_users", methods=["GET"])
