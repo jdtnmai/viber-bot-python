@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from threading import Lock
 from typing import List, Dict
 
@@ -20,7 +20,7 @@ class ConversationStatus:
     question_id: int
     active_responder_id: int = None
     status: str
-    responders: List[int] = []
+    responders: List[int] = field(default_factory=list)
     last_message_time: 0.0
 
 
