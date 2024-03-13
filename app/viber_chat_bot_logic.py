@@ -9,7 +9,7 @@ from sqlalchemy import and_, not_
 
 from logger import logger
 
-from conversation_tracker import ConversationManager
+from app.conversation_tracker import ConversationManager
 
 logger.debug("entered viber_chat_bot_logic")
 
