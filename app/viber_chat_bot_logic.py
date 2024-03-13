@@ -9,6 +9,8 @@ from sqlalchemy import and_, not_
 
 from logger import logger
 
+from conversation_tracker import ConversationManager
+
 logger.debug("entered viber_chat_bot_logic")
 
 
@@ -58,6 +60,10 @@ def get_unanswered_questions(session):
 """
 
 
+def review_message_statuses(conversation_manager):
+    logger.debug("reviewed message statuses")
+
+
 def parse_json(json_string):
     try:
         parsed_string = json.loads(json_string)
@@ -102,6 +108,9 @@ def get_message_media(message_dict):
 
 
 def parse_message(session, sender_viber_id, message_dict):
+    logger.debug("Checking messages statuses before parsing a message")
+    review_message_statuses(conversation_manager=ConversationManager())
+
     logger.debug("entered parse_message")
     logger.debug(f"message_dict {message_dict}")
     intention = get_chat_bot_intention(message_dict)
