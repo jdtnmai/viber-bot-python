@@ -18,8 +18,8 @@ class ConversationStatus:
     conversation_id: int
     sender_id: int
     question_id: int
-    active_responder_id: int = None
     status: str
+    active_responder_id: int = None
     responders: List[int] = field(default_factory=list)
     last_message_time: 0.0
 
