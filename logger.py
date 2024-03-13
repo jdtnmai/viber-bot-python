@@ -1,6 +1,6 @@
 import logging
 
-logger = logging.getLogger()
+logger = logging.getLogger("FoxBot_logger")
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
