@@ -51,7 +51,7 @@ class Question(Base):
     created_at = Column(DateTime)
 
     user = relationship("ChatBotUser")
-    answer = relationship("Answer", backref="question_ref")
+    answer = relationship("Answer", back_populates="question")
 
     def to_dict(self):
         return {
@@ -85,7 +85,7 @@ class Answer(Base):
     created_at = Column(DateTime)
     approved = Column(Boolean)
 
-    question = relationship("Question", backref="answers_ref", overlaps="answer")
+    question = relationship("Question", back_populates="answer")
     user = relationship("ChatBotUser")
 
     def to_dict(self):

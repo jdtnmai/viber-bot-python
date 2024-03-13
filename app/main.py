@@ -164,7 +164,7 @@ def incoming():
             sender_viber_id,
             message_dict,
         )
-        logger.debug("new_message_dicts", new_message_dicts)
+        logger.debug(f"new_message_dicts, {new_message_dicts}")
         new_messages = [TextMessage(**new_message) for new_message in new_message_dicts]
         for user in recipients_list:
             logger.debug(f"chatbot users : {user.viber_id}")
