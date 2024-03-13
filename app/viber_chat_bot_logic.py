@@ -60,6 +60,10 @@ def get_unanswered_questions(session):
 
 def parse_tracking_data(message_dict):
     logger.debug("parsing tracking data", message_dict)
+    logger.debug(
+        f"parsing tracking data message_dict keys { message_dict.keys()}, {type(message_dict)}"
+    )
+
     if "tracking_data" in message_dict.keys():
         tracking_data_json = message_dict["tracking_data"]
     else:
@@ -89,6 +93,7 @@ def get_message_media(message_dict):
 
 def parse_message(session, sender_viber_id, message_dict):
     logger.debug("entered parse_message")
+    logger.debug(f"message_dict {message_dict}")
     intention = get_chat_bot_intention(message_dict)
 
     sender = get_user_by_viber_id(session, sender_viber_id)
