@@ -51,9 +51,16 @@ def set_webhook(viber):
 # Schedule conversation manager review
 scheduler = sched.scheduler(time.time, time.sleep)
 scheduler.enter(5, 1, set_webhook, (viber,))
-scheduler.enter(60, 1, conversation_manager_review, (conversation_manager,))
+# scheduler.enter(60, 1, conversation_manager_review, (conversation_manager,))
 t = threading.Thread(target=scheduler.run)
 t.start()
+
+
+scheduler2 = sched.scheduler(time.time, time.sleep)
+# scheduler2.enter(5, 1, set_webhook, (viber,))
+scheduler2.enter(60, 1, conversation_manager_review, (conversation_manager,))
+t2 = threading.Thread(target=scheduler2.run)
+t2.start()
 
 
 @app.route("/", methods=["GET"])
