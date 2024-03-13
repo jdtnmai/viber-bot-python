@@ -9,7 +9,7 @@ from sqlalchemy import and_, not_
 
 from logger import logger
 
-from app.conversation_tracker import ConversationManager
+from app.conversation_tracker import conversation_manager
 
 logger.debug("entered viber_chat_bot_logic")
 
@@ -109,7 +109,7 @@ def get_message_media(message_dict):
 
 def parse_message(session, sender_viber_id, message_dict):
     logger.debug("Checking messages statuses before parsing a message")
-    review_message_statuses(conversation_manager=ConversationManager())
+    review_message_statuses(conversation_manager)
 
     logger.debug("entered parse_message")
     logger.debug(f"message_dict {message_dict}")

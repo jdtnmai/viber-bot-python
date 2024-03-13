@@ -4,7 +4,7 @@ from sqlalchemy.orm import aliased
 from app.postgre_entities import ChatBotUser, Question, Answer
 from app.postgre_entities import Session
 from app.viber_chat_bot_logic import parse_message, review_message_statuses
-from app.conversation_tracker import ConversationManager
+from app.conversation_tracker import conversation_manager
 
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
@@ -47,8 +47,6 @@ viber = Api(
 def set_webhook(viber):
     viber.set_webhook("https://viber-fox-bot-9d12996926ae.herokuapp.com/")
 
-
-conversation_manager = ConversationManager()
 
 # Schedule conversation manager review
 scheduler = sched.scheduler(time.time, time.sleep)

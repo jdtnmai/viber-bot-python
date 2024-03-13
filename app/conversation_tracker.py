@@ -63,3 +63,6 @@ class ConversationManager:
         with self._lock:
             if conversation_id in self.conversations:
                 del self.conversations[conversation_id]
+
+
+conversation_manager = ConversationManager()
