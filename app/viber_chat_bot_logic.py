@@ -7,14 +7,9 @@ from app.postgre_entities import (
 )
 from sqlalchemy import and_, not_
 
-import logging
+from main import logger
 
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+logger.debug("entered viber_chat_bot_logic")
 
 
 def get_user_by_viber_id(session, viber_id):
