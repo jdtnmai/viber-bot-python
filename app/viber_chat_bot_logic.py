@@ -111,7 +111,7 @@ def parse_message(session, sender_viber_id, message_dict):
 
     media_link = get_message_media(message_dict)
     message_text = message_dict["text"]
-
+    logger.debug(f"intentions {intention}")
     if intention["asking_question"]:  # "klausimas"
         question = create_question(session, message_text, sender.user_id)
 
@@ -153,40 +153,18 @@ def parse_message(session, sender_viber_id, message_dict):
                 4. atsakyti <klausimo nr> - atsakyti, neatsakytą klausimą,\n\
                 5. xxx - atsakymo pabaigos ženklas. Jeigu pabaigėte atsakymą, išsiųskite šią žinutę,\n\
                 6. tvirtinu - jeigu į gautą atsakymą atasakysite šia komnada, kai kitą kartą klausite to pačio klausimo, gausite patvirtintą atsakymą.\n\n\
-                SVARBU: Jeigu aš jums uždaviau klausimą, į jį pradėkite atskainėti nauja žinutę. Atsakymą gali sudaryti daugiau nei viena žinutė. \
-                    Pabaigus atsakymą atsiųskite žinutę xxx",
+        SVARBU: Jeigu aš jums uždaviau klausimą, į jį pradėkite atskainėti nauja žinutę.\n\
+                Atsakymą gali sudaryti daugiau nei viena žinutė.\n\
+                Pabaigus atsakymą atsiųskite žinutę xxx",
             "tracking_data": json.dumps({"tracking_message": "nothing to track"}),
         }
         messages_out = [welcome_help_message]
-        recipients_list = get_all_users_except_excluded(session, [sender.user_id])
+        recipient_list = [sender]
         return (
             messages_out,
             recipient_list,
         )
-    # if message_text.lower().startswith("klausi"):
-    #     question = create_question(session, message_text, sender.user_id)
-    #     new_text = f"Prašau atsakyti į klausimą :) {message_text}"
-    #     recipients_list = get_all_users_except_excluded(session, [sender.user_id])
 
-    #     return (dict(text=new_text, tracking_data=question.to_json()), recipients_list)
-    # elif "tracking_data" in message_dict:
-    #     tracking_data = json.loads(message_dict["tracking_data"])
-    #     question_id, asked_user_id = (
-    #         tracking_data["question_id"],
-    #         tracking_data["user_id"],
-    #     )
-    #     logger.debug(f"parsed tracking data {question_id, asked_user_id}")
-    #     print(f"parsed tracking data {question_id, asked_user_id}")
-    #     answer = create_answer(session, message_text, question_id, sender.user_id)
-    #     asked_user = get_user_by_user_id(session, asked_user_id)
-    #     logger.debug(f"answer response values : {answer.to_json()}, {asked_user}")
-    #     return (
-    #         dict(
-    #             text=f"Gavote atsakyma. {answer.answer_text}",
-    #             tracking_data=answer.to_json(),
-    #         ),
-    #         [asked_user],
-    #     )
     else:
         return (
             [
