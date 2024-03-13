@@ -42,7 +42,7 @@ def get_all_users_except_excluded(session, excluded_user_ids: list):
 
 
 def get_unanswered_questions(session):
-    return session.query(Question).filter(~Question.answers.any()).all()
+    return session.query(Question).filter(~Question.answer.any()).all()
 
 
 ## Parse message
