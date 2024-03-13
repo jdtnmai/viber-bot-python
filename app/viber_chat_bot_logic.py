@@ -7,7 +7,7 @@ from app.postgre_entities import (
 )
 from sqlalchemy import and_, not_
 
-from main import logger
+from logger import logger
 
 logger.debug("entered viber_chat_bot_logic")
 
@@ -88,6 +88,7 @@ def get_message_media(message_dict):
 
 
 def parse_message(session, sender_viber_id, message_dict):
+    logger.debug("entered parse_message")
     intention = get_chat_bot_intention(message_dict)
 
     sender = get_user_by_viber_id(session, sender_viber_id)

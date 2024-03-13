@@ -15,20 +15,13 @@ from viberbot.api.viber_requests import ViberSubscribedRequest
 from viberbot.api.viber_requests import ViberUnsubscribedRequest
 
 import time
-import logging
 import sched
 import threading
 
 
 import os
 
-
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+from logger import logger
 
 app = Flask(__name__)
 
@@ -53,6 +46,7 @@ t.start()
 
 @app.route("/", methods=["GET"])
 def hello_world():
+    logger.debug("called hello world")
     return "Hello world!"
 
 
