@@ -87,10 +87,12 @@ def get_chat_bot_intention(message_dict):
     text = message_dict.get("text").lower()
     asking_question = text.startswith("klausimas")
     asking_to_list_unanswered_questions = text.startswith("neatsakyti klausimai")
+    welcome_with_help = text.startswith("labas")
 
     return dict(
         asking_question=asking_question,
         asking_to_list_unanswered_questions=asking_to_list_unanswered_questions,
+        welcome_with_help=welcome_with_help,
     )
 
 
@@ -141,6 +143,22 @@ def parse_message(session, sender_viber_id, message_dict):
             messages_out,
             recipient_list,
         )
+    elif intention["welcome_with_help"]:
+        welcome_help_message = {
+            "text": "Labas! Aš esu FoxBot. Mano darbas padėti atsakyti į Jūsų užduotus klausimus. Jeigu nežinosiu atsakymo, tada paklausiu Jūsų kolegų. \n\
+                Komandos:\n\
+                1. labas - pamatysite šią žinutę,\n\
+                2. klausimas: <klausimo tekstas>? - užduosite man klausimą,\n\
+                3. neatsakyti klausimai - pamatysi visus klausimus, kurie neturi atsakymo,\n\
+                4. atsakyti <klausimo nr> - atsakyti, neatsakytą klausimą,\n\
+                5. xxx - atsakymo pabaigos ženklas. Jeigu pabaigėte atsakymą, išsiųskite šią žinutę,\n\
+                6. tvirtinu - jeigu į gautą atsakymą atasakysite šia komnada, kai kitą kartą klausite to pačio klausimo, gausite patvirtintą atsakymą.\n\n\
+                SVARBU: Jeigu aš jums uždaviau klausimą, į jį pradėkite atskainėti nauja žinutę. Atsakymą gali sudaryti daugiau nei viena žinutė. \
+                    Pabaigus atsakymą atsiųskite žinutę xxx",
+            "tracking_data": json.dumps({"tracking_message": "nothing to track"}),
+        }
+
+        recipients_list = get_all_users_except_excluded(session, [sender.user_id])
 
     # if message_text.lower().startswith("klausi"):
     #     question = create_question(session, message_text, sender.user_id)
