@@ -58,6 +58,14 @@ def get_unanswered_questions(session):
 """
 
 
+def parse_json(json_string):
+    try:
+        parsed_string = json.loads(json_string)
+    except json.JSONDecodeError as e:
+        parsed_string = {}
+    return parsed_string
+
+
 def parse_tracking_data(message_dict):
     logger.debug("parsing tracking data", message_dict)
     logger.debug(
@@ -66,12 +74,12 @@ def parse_tracking_data(message_dict):
 
     if "tracking_data" in message_dict.keys():
         tracking_data_json = message_dict["tracking_data"]
-    else:
-        return {}
+        tracking_data = parse_json(tracking_data_json)
+        logger.debug(f"raw tracking data {tracking_data_json}")
+        logger.debug(f"parsed tracking data {tracking_data}")
+        return tracking_data
 
-    tracking_data = json.loads(tracking_data_json)
-    logger.debug("dictionary returned tracking data", tracking_data)
-    return tracking_data
+    return {}
 
 
 def get_chat_bot_intention(message_dict):
