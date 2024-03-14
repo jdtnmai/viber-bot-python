@@ -9,7 +9,7 @@ from sqlalchemy import and_, not_
 
 from logger import logger
 
-from app.conversation_tracker import conversation_manager
+from app.conversation_tracker import conversation_manager, ConversationStatus
 
 logger.debug("entered viber_chat_bot_logic")
 
@@ -107,29 +107,34 @@ def get_message_media(message_dict):
     return media_link
 
 
+def ask_question(session, message_text, sender):
+    question = create_question(session, message_text, sender.user_id)
+
+    new_text = f"Prašau atsakyti į klausimą :) {message_text}"
+
+    messages_out = [dict(text=new_text, tracking_data=question.to_json())]
+
+    recipients_list = get_all_users_except_excluded(session, [sender.user_id])
+    return messages_out, recipients_list
+
+
 def parse_message(session, sender_viber_id, message_dict):
     logger.debug("Checking messages statuses before parsing a message")
     review_message_statuses(conversation_manager)
 
     logger.debug("entered parse_message")
     logger.debug(f"message_dict {message_dict}")
-    intention = get_chat_bot_intention(message_dict)
-    logger
-    sender = get_user_by_viber_id(session, sender_viber_id)
-    tracking_data = parse_tracking_data(message_dict)
 
+    sender = get_user_by_viber_id(session, sender_viber_id)
+    intention = get_chat_bot_intention(message_dict)
+
+    tracking_data = parse_tracking_data(message_dict)
     media_link = get_message_media(message_dict)
     message_text = message_dict["text"]
+
     logger.debug(f"intentions {intention}")
     if intention["asking_question"]:  # "klausimas"
-        question = create_question(session, message_text, sender.user_id)
-
-        new_text = f"Prašau atsakyti į klausimą :) {message_text}"
-
-        messages_out = [dict(text=new_text, tracking_data=question.to_json())]
-
-        recipients_list = get_all_users_except_excluded(session, [sender.user_id])
-
+        messages_out, recipients_list = ask_question(session, message_text, sender)
         return (
             messages_out,
             recipients_list,

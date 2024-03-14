@@ -156,7 +156,6 @@ def show_foxbot_face():
 @app.route("/", methods=["POST"])
 def incoming():
     session = Session()
-    logger.debug("received request. post data: {0}".format(request.get_data()))
 
     viber_request = viber.parse_request(request.get_data().decode("utf8"))
     logger.debug("received request. post data: {0}".format(viber_request))

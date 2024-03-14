@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from threading import Lock
 from typing import List, Dict
+import uuid
 
 
 @dataclass
@@ -15,7 +16,7 @@ class Status:
 
 @dataclass
 class ConversationStatus:
-    conversation_id: int
+    conversation_id: str
     sender_id: int
     question_id: int
     status: str
@@ -27,7 +28,6 @@ class ConversationStatus:
 class ConversationManager:
     _instance = None
     _lock = Lock()
-    _conversation_id = 0
 
     def __new__(cls, *args, **kwargs):
         with cls._lock:
@@ -40,12 +40,7 @@ class ConversationManager:
 
     def get_next_conversation_id(self):
         with self._lock:
-            self._conversation_id += 1
-            return self._conversation_id
-
-    def get_current_conversation_id(self):
-        with self._lock:
-            return self._conversation_id
+            return str(uuid.uuid4())
 
     def add_conversation(
         self, conversation_id, conversation_status: ConversationStatus
