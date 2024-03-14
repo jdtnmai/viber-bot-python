@@ -72,6 +72,11 @@ class ConversationManager:
             if conversation_id in self.conversations:
                 del self.conversations[conversation_id]
 
+    def get_conversation_status(self, conversation_id):
+        with self._lock:
+            if conversation_id in self.conversations:
+                return self.conversations[conversation_id].status
+
 
 conversation_manager = ConversationManager()
 
