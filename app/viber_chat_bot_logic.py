@@ -119,7 +119,7 @@ def ask_question(session, message_text, sender):
     responder_id = responders_list.pop() if responders_list else None
     conversation_id = create_conversation(
         conversation_manager,
-        sender.sender_id,
+        sender.user_id,
         question.question_id,
         responder_id,
         responders_list,
