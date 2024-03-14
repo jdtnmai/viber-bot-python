@@ -130,7 +130,7 @@ def ask_question(session, message_text, sender):
     # From here down we must refactor to decouple message sending operation.
     new_text = f"Prašau atsakyti į klausimą :) {message_text}"
 
-    recipients_list = get_user_by_user_id(session, responder_id)
+    recipients_list = [get_user_by_user_id(session, responder_id)]
     messages_out = [
         dict(
             text=new_text,
