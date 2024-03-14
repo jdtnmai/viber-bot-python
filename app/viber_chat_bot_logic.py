@@ -10,6 +10,8 @@ from sqlalchemy import and_, not_
 from logger import logger
 
 from app.conversation_tracker import (
+    CSAttributes,
+    Status,
     conversation_manager,
     ConversationStatus,
     create_conversation,
@@ -114,32 +116,77 @@ def get_message_media(message_dict):
 def ask_question(session, message_text, sender):
     question = create_question(session, message_text, sender.user_id)
 
-    recipients_list = get_all_users_except_excluded(session, [sender.user_id])
-    responders_list = [user.user_id for user in recipients_list]
-    responder_id = responders_list.pop() if responders_list else None
     conversation_id = create_conversation(
         conversation_manager,
         sender.user_id,
         question.question_id,
-        responder_id,
-        responders_list,
     )
-    tracking_data = {"conversation_id": conversation_id}
+    conversation_manager.update_conversation(
+        conversation_id=conversation_id,
+        updated_attributes={CSAttributes.status: Status.sender_asked_question},
+    )
     logger.debug(f"conversation statuses: {conversation_manager.conversations}")
 
     # From here down we must refactor to decouple message sending operation.
-    new_text = f"Prašau atsakyti į klausimą :) {message_text}"
+    return conversation_id
 
-    recipients_list = [get_user_by_user_id(session, responder_id)]
-    messages_out = [
-        dict(
-            text=new_text,
-            tracking_data=json.dumps(tracking_data),
+
+def get_question_answer():
+    return "...|..."
+
+
+def does_question_have_answer(answer_candidate):
+    return False
+
+
+def asking_question_flow(session, message_text, sender):
+    conversation_id = ask_question(session, message_text, sender)
+    tracking_data = {"conversation_id": conversation_id}
+
+    answer_candidate = get_question_answer()
+    question_has_anwer = does_question_have_answer(answer_candidate)
+    question_does_not_have_answer = not question_has_anwer
+    if question_has_anwer:
+        recipients_list = [sender.user_id]
+        messages_out = [
+            dict(
+                text=answer_candidate,
+                tracking_data=json.dumps(tracking_data),
+            )
+        ]
+        send_message = True
+        conversation_manager.update_conversation(
+            conversation_id=conversation_id,
+            updated_attributes={CSAttributes.status: Status.conversation_finished},
         )
-    ]
-    recipients_list
+        logger.debug(f"conversation statuses: {conversation_manager.conversations}")
+        return messages_out, recipients_list, send_message
 
-    return messages_out, recipients_list
+    if question_does_not_have_answer:
+        recipients_list = get_all_users_except_excluded(session, [sender.user_id])
+        responders_list = [user.user_id for user in recipients_list]
+        responder_id = responders_list.pop() if responders_list else None
+
+        conversation_manager.update_conversation(
+            conversation_id=conversation_id,
+            updated_attributes={
+                CSAttributes.active_responder_id: responder_id,
+                CSAttributes.responders: responders_list,
+                CSAttributes.status: Status.responder_writes_answer,
+            },
+        )
+        logger.debug(f"conversation statuses: {conversation_manager.conversations}")
+        new_text = f"Prašau atsakyti į klausimą :) {message_text}"
+
+        messages_out = [
+            dict(
+                text=new_text,
+                tracking_data=json.dumps(tracking_data),
+            )
+        ]
+        recipients_list
+        send_message = True
+        return messages_out, recipients_list, send_message
 
 
 def parse_message(session, sender_viber_id, message_dict):
@@ -158,10 +205,13 @@ def parse_message(session, sender_viber_id, message_dict):
 
     logger.debug(f"intentions {intention}")
     if intention["asking_question"]:  # "klausimas"
-        messages_out, recipients_list = ask_question(session, message_text, sender)
+        messages_out, recipients_list, send_message = asking_question_flow(
+            session, message_text, sender
+        )
         return (
             messages_out,
             recipients_list,
+            send_message,
         )
 
     elif intention["asking_to_list_unanswered_questions"]:  # "neatsakyti klausimai"
@@ -180,6 +230,7 @@ def parse_message(session, sender_viber_id, message_dict):
         return (
             messages_out,
             recipient_list,
+            True,
         )
     elif intention["welcome_with_help"]:
         welcome_help_message = {
@@ -201,6 +252,7 @@ def parse_message(session, sender_viber_id, message_dict):
         return (
             messages_out,
             recipient_list,
+            True,
         )
 
     else:
@@ -214,4 +266,5 @@ def parse_message(session, sender_viber_id, message_dict):
                 }
             ],
             [sender],
+            True,
         )

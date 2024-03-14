@@ -15,6 +15,17 @@ class Status:
 
 
 @dataclass
+class CSAttributes:
+    conversation_id = "conversation_id"
+    sender_id = "sender_id"
+    question_id = "question_id"
+    status = "status"
+    active_responder_id = "active_responder_id"
+    responders = "responders"
+    last_message_time = "last_message_time"
+
+
+@dataclass
 class ConversationStatus:
     conversation_id: str
     sender_id: int
@@ -71,9 +82,7 @@ def create_conversation(
         conversation_id=conversation_id,
         sender_id=sender_id,
         question_id=question_id,
-        status=Status.sender_asked_question,
-        active_responder_id=responder_id,
     )
-    conversation.responders.extend(responders_list)
+
     conversation_manager.add_conversation(conversation_id, conversation)
     return conversation_id

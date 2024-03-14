@@ -153,6 +153,15 @@ def show_foxbot_face():
     return send_file(face_path, mimetype="image/png")
 
 
+def send_viber_messages(viber, new_message_dicts, recipients_list):
+    logger.debug(f"new_message_dicts, {new_message_dicts}")
+    new_messages = [TextMessage(**new_message) for new_message in new_message_dicts]
+    for user in recipients_list:
+        logger.debug(f"chatbot users : {user.viber_id}")
+        sent_message_response = viber.send_messages(user.viber_id, new_messages)
+        logger.debug(f"sent message response: {sent_message_response}")
+
+
 @app.route("/", methods=["POST"])
 def incoming():
     session = Session()
@@ -165,17 +174,13 @@ def incoming():
         logger.debug(f"message :  {viber_request.message}")
         message_dict = viber_request.message.to_dict()
         sender_viber_id = viber_request.sender.id
-        new_message_dicts, recipients_list = parse_message(
+        new_message_dicts, recipients_list, send_message = parse_message(
             session,
             sender_viber_id,
             message_dict,
         )
-        logger.debug(f"new_message_dicts, {new_message_dicts}")
-        new_messages = [TextMessage(**new_message) for new_message in new_message_dicts]
-        for user in recipients_list:
-            logger.debug(f"chatbot users : {user.viber_id}")
-            sent_message_response = viber.send_messages(user.viber_id, new_messages)
-            logger.debug(f"sent message response: {sent_message_response}")
+        if send_message:
+            send_viber_messages(viber, new_message_dicts, recipients_list)
 
     elif (
         isinstance(viber_request, ViberConversationStartedRequest)
