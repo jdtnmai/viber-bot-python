@@ -9,7 +9,11 @@ from sqlalchemy import and_, not_
 
 from logger import logger
 
-from app.conversation_tracker import conversation_manager, ConversationStatus
+from app.conversation_tracker import (
+    conversation_manager,
+    ConversationStatus,
+    create_conversation,
+)
 
 logger.debug("entered viber_chat_bot_logic")
 
@@ -110,11 +114,31 @@ def get_message_media(message_dict):
 def ask_question(session, message_text, sender):
     question = create_question(session, message_text, sender.user_id)
 
+    recipients_list = get_all_users_except_excluded(session, [sender.user_id])
+    responders_list = [user.user_id for user in recipients_list]
+    responder_id = responders_list.pop() if responders_list else None
+    conversation_id = create_conversation(
+        conversation_manager,
+        sender.sender_id,
+        question.question_id,
+        responder_id,
+        responders_list,
+    )
+    tracking_data = {"conversation_id": conversation_id}
+    logger.debug(f"conversation statuses: {conversation_manager.conversations}")
+
+    # From here down we must refactor to decouple message sending operation.
     new_text = f"Prašau atsakyti į klausimą :) {message_text}"
 
-    messages_out = [dict(text=new_text, tracking_data=question.to_json())]
+    recipients_list = get_user_by_user_id(responder_id)
+    messages_out = [
+        dict(
+            text=new_text,
+            tracking_data=json.dumps(tracking_data),
+        )
+    ]
+    recipients_list
 
-    recipients_list = get_all_users_except_excluded(session, [sender.user_id])
     return messages_out, recipients_list
 
 

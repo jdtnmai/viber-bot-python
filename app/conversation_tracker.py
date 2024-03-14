@@ -49,7 +49,7 @@ class ConversationManager:
             if conversation_id not in self.conversations:
                 self.conversations[conversation_id] = conversation_status
 
-    def update_conversation(self, conversation_id: int, updated_attributes: Dict):
+    def update_conversation(self, conversation_id: str, updated_attributes: Dict):
         with self._lock:
             for key, value in updated_attributes.items():
                 setattr(self.conversations[conversation_id], key, value)
@@ -61,3 +61,19 @@ class ConversationManager:
 
 
 conversation_manager = ConversationManager()
+
+
+def create_conversation(
+    conversation_manager, sender_id, question_id, responder_id, responders_list
+):
+    conversation_id = conversation_manager.get_next_conversation_id()
+    conversation = ConversationStatus(
+        conversation_id=conversation_id,
+        sender_id=sender_id,
+        question_id=question_id,
+        status=Status.sender_asked_question,
+        active_responder_id=responder_id,
+    )
+    conversation.responders.extend(responders_list)
+    conversation_manager.add_conversation(conversation_id, conversation)
+    return conversation_id
