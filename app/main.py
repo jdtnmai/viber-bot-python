@@ -3,7 +3,8 @@ from sqlalchemy import inspect
 from sqlalchemy.orm import aliased
 from app.postgre_entities import ChatBotUser, Question, Answer
 from app.postgre_entities import Session
-from app.viber_chat_bot_logic import parse_message
+from app.viber_chat_bot_logic import parse_message, review_message_statuses
+from app.conversation_tracker import conversation_manager
 
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
@@ -14,23 +15,25 @@ from viberbot.api.viber_requests import ViberMessageRequest
 from viberbot.api.viber_requests import ViberSubscribedRequest
 from viberbot.api.viber_requests import ViberUnsubscribedRequest
 
-import time
-import logging
 import sched
+import time
 import threading
 
 
 import os
 
-
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+from logger import logger
 
 app = Flask(__name__)
+
+
+# Define your ConversationManager class and functions here
+
+
+def conversation_manager_review(conversation_manager):
+    logger.debug("Checking meesage status via conversation_manager_review every 60s. ")
+    review_message_statuses(conversation_manager)
+
 
 viber = Api(
     BotConfiguration(
@@ -45,15 +48,25 @@ def set_webhook(viber):
     viber.set_webhook("https://viber-fox-bot-9d12996926ae.herokuapp.com/")
 
 
+# Schedule conversation manager review
 scheduler = sched.scheduler(time.time, time.sleep)
 scheduler.enter(5, 1, set_webhook, (viber,))
+# scheduler.enter(60, 1, conversation_manager_review, (conversation_manager,))
 t = threading.Thread(target=scheduler.run)
 t.start()
 
 
+scheduler2 = sched.scheduler(time.time, time.sleep)
+# scheduler2.enter(5, 1, set_webhook, (viber,))
+scheduler2.enter(60, 1, conversation_manager_review, (conversation_manager,))
+t2 = threading.Thread(target=scheduler2.run)
+t2.start()
+
+
 @app.route("/", methods=["GET"])
 def hello_world():
-    return "Hello world!"
+    logger.debug("called hello world")
+    return render_template("index_template.html")
 
 
 @app.route("/chatbot_users", methods=["GET"])
@@ -143,7 +156,6 @@ def show_foxbot_face():
 @app.route("/", methods=["POST"])
 def incoming():
     session = Session()
-    logger.debug("received request. post data: {0}".format(request.get_data()))
 
     viber_request = viber.parse_request(request.get_data().decode("utf8"))
     logger.debug("received request. post data: {0}".format(viber_request))
@@ -153,15 +165,16 @@ def incoming():
         logger.debug(f"message :  {viber_request.message}")
         message_dict = viber_request.message.to_dict()
         sender_viber_id = viber_request.sender.id
-        new_message, recipients_list = parse_message(
+        new_message_dicts, recipients_list = parse_message(
             session,
             sender_viber_id,
             message_dict,
         )
-        new_message = TextMessage(**new_message)
+        logger.debug(f"new_message_dicts, {new_message_dicts}")
+        new_messages = [TextMessage(**new_message) for new_message in new_message_dicts]
         for user in recipients_list:
             logger.debug(f"chatbot users : {user.viber_id}")
-            sent_message_response = viber.send_messages(user.viber_id, [new_message])
+            sent_message_response = viber.send_messages(user.viber_id, new_messages)
             logger.debug(f"sent message response: {sent_message_response}")
 
     elif (

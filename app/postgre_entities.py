@@ -51,6 +51,16 @@ class Question(Base):
     created_at = Column(DateTime)
 
     user = relationship("ChatBotUser")
+    answer = relationship("Answer", back_populates="question")
+
+    def to_dict(self):
+        return {
+            "question_id": self.question_id,
+            "user_id": self.user_id,
+            "created_at": str(
+                self.created_at
+            ),  # Convert to string for JSON serialization
+        }
 
     def to_json(self):
         return json.dumps(
@@ -75,8 +85,19 @@ class Answer(Base):
     created_at = Column(DateTime)
     approved = Column(Boolean)
 
-    question = relationship("Question")
+    question = relationship("Question", back_populates="answer")
     user = relationship("ChatBotUser")
+
+    def to_dict(self):
+        return {
+            "answer_id": self.answer_id,
+            "question_id": self.question_id,
+            "user_id": self.user_id,
+            "approved": self.approved,
+            "created_at": str(
+                self.created_at
+            ),  # Convert to string for JSON serialization
+        }
 
     def to_json(self):
         return json.dumps(
