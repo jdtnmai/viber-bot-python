@@ -32,7 +32,7 @@ class ConversationStatus:
     conversation_id: str
     sender_id: int
     question_id: int
-    status: Status.sender_started_conversation
+    status: str = Status.sender_started_conversation
     active_responder_id: int = None
     responders: List[int] = field(default_factory=list)
     last_message_time: float = 0.0
