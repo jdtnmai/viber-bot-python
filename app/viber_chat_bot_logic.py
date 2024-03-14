@@ -172,7 +172,7 @@ def asking_question_flow(session, message_text, sender):
             updated_attributes={
                 CSAttributes.active_responder_id: responder_id,
                 CSAttributes.responders: responders_list,
-                CSAttributes.status: Status.responder_writes_answer,
+                CSAttributes.status: Status.sent_question_to_responder,
             },
         )
         logger.debug(f"conversation statuses: {conversation_manager.conversations}")

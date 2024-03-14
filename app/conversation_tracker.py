@@ -6,7 +6,9 @@ import uuid
 
 @dataclass
 class Status:
+    sender_started_conversation = "sender_started_conversation"
     sender_asked_question = "sender_asked_question"
+    sent_question_to_responder = "sent_question_to_responder"
     responder_writes_answer = "responder_writes_answer"
     responder_submitted_answer = "responder_submitted_answer"
     sender_accepted_answer = "sender_accepted_answer"
@@ -30,7 +32,7 @@ class ConversationStatus:
     conversation_id: str
     sender_id: int
     question_id: int
-    status: str
+    status: Status.sender_started_conversation
     active_responder_id: int = None
     responders: List[int] = field(default_factory=list)
     last_message_time: float = 0.0
