@@ -407,10 +407,10 @@ def parse_message(session, sender_viber_id, message_dict):
     message_text = message_dict["text"]
 
     tracking_data = parse_tracking_data(message_dict)
-    if conversation_id not in tracking_data:
+    if "conversation_id" not in tracking_data:
         conversation_id = None
     else:
-        conversation_id = tracking_data.get(conversation_id)
+        conversation_id = tracking_data.get("conversation_id")
         conversation_status = conversation_manager.get_conversation_status(
             conversation_id
         )
