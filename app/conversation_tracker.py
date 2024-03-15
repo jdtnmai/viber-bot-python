@@ -81,7 +81,7 @@ class ConversationManager:
     def get_conversation_status(self, conversation_id):
         with self._lock:
             logger.debug(
-                "conversation_id value: {conversation_id}. get_conversation_status, {self.conversations}"
+                f"conversation_id value: {conversation_id}. get_conversation_status, {self.conversations}"
             )
             if conversation_id in self.conversations:
                 return self.conversations[conversation_id].status

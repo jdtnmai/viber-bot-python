@@ -213,7 +213,9 @@ def conversation_flow(
     conversation_finished = "conversation_finished"
     """
 
-    conversation = conversation_manager.get_conversation()
+    conversation = conversation_manager.get_conversation(
+        conversation_id=conversation_id
+    )
     conversation_status = conversation.status
 
     if conversation_status == Status.sent_question_to_responder:
@@ -415,7 +417,7 @@ def parse_message(session, sender_viber_id, message_dict):
         conversation_status = None
     else:
         logger.debug(
-            "conversation_id {conversation_id}, {conversation_manager.conversations}"
+            f"conversation_id {conversation_id}, {conversation_manager.conversations}"
         )
         conversation_id = tracking_data.get("conversation_id")
         conversation_status = conversation_manager.get_conversation_status(
