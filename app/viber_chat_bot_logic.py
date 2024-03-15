@@ -415,6 +415,9 @@ def parse_message(session, sender_viber_id, message_dict):
             conversation_id
         )
 
+    logger.debug(
+        f"is conversation flow {any(intention.values())}, conversation_status {conversation_status}, if evaluation {not any(intention.values()) and conversation_status is not None}"
+    )
     if not any(intention.values()) and conversation_status is not None:
         messages_out, recipients_list, send_message = conversation_flow(
             session,
