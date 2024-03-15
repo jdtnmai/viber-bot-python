@@ -407,8 +407,13 @@ def parse_message(session, sender_viber_id, message_dict):
     message_text = message_dict["text"]
 
     tracking_data = parse_tracking_data(message_dict)
-    conversation_id = tracking_data.get(conversation_id)
-    conversation_status = conversation_manager.get_conversation_status(conversation_id)
+    if conversation_id not in tracking_data:
+        conversation_id = None
+    else:
+        conversation_id = tracking_data.get(conversation_id)
+        conversation_status = conversation_manager.get_conversation_status(
+            conversation_id
+        )
 
     if not any(intention.values()) and conversation_status is not None:
         messages_out, recipients_list, send_message = conversation_flow(
