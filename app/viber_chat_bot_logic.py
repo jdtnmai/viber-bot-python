@@ -407,6 +407,9 @@ def parse_message(session, sender_viber_id, message_dict):
     message_text = message_dict["text"]
 
     tracking_data = parse_tracking_data(message_dict)
+    logger.debug(
+        f'tracking_data {tracking_data}, {"conversation_id" not in tracking_data}'
+    )
     if "conversation_id" not in tracking_data:
         conversation_id = None
         conversation_status = None
