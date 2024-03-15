@@ -194,22 +194,39 @@ def create_answer(session, answer_text, question_id, user_id, approved=False):
     return answer
 
 
+def answer_exists(session, user_id, question_id):
+    answer_exists = (
+        session.query(Answer)
+        .filter_by(question_id=question_id, user_id=user_id)
+        .first()
+    )
+    if answer_exists is None:
+        return False
+    else:
+        return True
+
+
+def get_user_answer(session, user_id, question_id):
+    answer = (
+        session.query(Answer)
+        .filter_by(question_id=question_id, user_id=user_id)
+        .first()
+    )
+    return answer
+
+
 # Function to retrieve an Answer by answer_id
 def get_answer(session, answer_id):
     return session.get(Answer, answer_id)
 
 
 # Function to update an Answer's details
-def update_answer(
-    session, answer_id, answer_text=None, question_id=None, user_id=None, approved=None
-):
+def update_answer(session, answer_id, answer_text=None, user_id=None, approved=None):
     answer = session.get(Answer, answer_id)
     if answer:
         if answer_text:
             answer.answer_text = answer_text
-        if question_id:
-            answer.question_id = question_id
-        if user_id:
+        if user_id is not None:
             answer.user_id = user_id
         if approved is not None:
             answer.approved = approved

@@ -72,10 +72,42 @@ class ConversationManager:
             if conversation_id in self.conversations:
                 del self.conversations[conversation_id]
 
+    def get_conversation(self, conversation_id) -> ConversationStatus:
+        with self._lock:
+            if conversation_id in self.conversations:
+                return self.conversations[conversation_id]
+
     def get_conversation_status(self, conversation_id):
         with self._lock:
             if conversation_id in self.conversations:
                 return self.conversations[conversation_id].status
+
+    def is_user_available(self, user_id):
+        with self._lock:
+            if [
+                conversation.sender_id
+                for conversation in self.conversations
+                if (conversation.sender_id == user_id)
+                & (
+                    conversation.status
+                    not in (Status.conversation_finished, Status.sender_accepted_answer)
+                )
+            ] or [
+                conversation.active_responder_id
+                for conversation in self.conversations
+                if (conversation.active_responder_id == user_id)
+                & (
+                    conversation.status
+                    not in (
+                        Status.conversation_finished,
+                        Status.sender_accepted_answer,
+                        Status.sender_rejected_answer,
+                    )
+                )
+            ]:
+                return False
+            else:
+                return True
 
 
 conversation_manager = ConversationManager()

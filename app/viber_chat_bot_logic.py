@@ -1,9 +1,15 @@
 import json
+import time
 from app.postgre_entities import (
     ChatBotUser,
     Question,
+    answer_exists,
     create_question,
     create_answer,
+    get_answer,
+    get_question,
+    get_user_answer,
+    update_answer,
 )
 from sqlalchemy import and_, not_
 
@@ -195,7 +201,196 @@ def conversation_flow(
     sender,
     message_text,
     media_link,
-): ...
+):
+    """
+    sender_started_conversation = "sender_started_conversation"
+    sender_asked_question = "sender_asked_question"
+    sent_question_to_responder = "sent_question_to_responder"
+    responder_writes_answer = "responder_writes_answer"
+    responder_submitted_answer = "responder_submitted_answer"
+    sender_accepted_answer = "sender_accepted_answer"
+    sender_rejected_answer = "sender_rejected_answer"
+    conversation_finished = "conversation_finished"
+    """
+
+    conversation = conversation_manager.get_conversation()
+    conversation_status = conversation.status
+
+    if conversation_status == Status.sent_question_to_responder:
+        """
+        if status is sent q to responder, it means that we probably got back an answer.
+        we create answer object, add answer and update status, message recieved time.  dont send message
+        """
+        exists = answer_exists(
+            session, conversation.responder_id, conversation.question_id
+        )
+        if not exists:
+            answer = create_answer(
+                session,
+                message_text,
+                conversation.question_id,
+                conversation.active_responder_id,
+            )
+
+            conversation_manager.update_conversation(
+                conversation_id=conversation_id,
+                updated_attributes={
+                    CSAttributes.last_message_time: time.time(),
+                    CSAttributes.conversation_status: Status.responder_writes_answer,
+                },
+            )
+            send_message = False
+            return (
+                [],
+                [],
+                send_message,
+            )
+
+    if conversation_status == Status.responder_writes_answer:
+        """
+        if status is responder write answer, we check if message is xxx, if yes, we update status, message time and send a message to the question owner.
+        if message is not xxx, we append the answer and update message time. dont send message
+        """
+        exists = answer_exists(
+            session, conversation.responder_id, conversation.question_id
+        )
+        if exists:
+            if message_text == "xxx":
+                answer = get_user_answer(
+                    session, conversation.responder_id, conversation.question_id
+                )
+                conversation_manager.update_conversation(
+                    conversation_id=conversation_id,
+                    updated_attributes={
+                        CSAttributes.last_message_time: time.time(),
+                        CSAttributes.status: Status.responder_submitted_answer,
+                    },
+                )
+                recipients = [
+                    get_user_by_user_id(getattr(conversation, CSAttributes.sender_id))
+                ]
+                messages = [
+                    {
+                        "message_text": answer.answer_text,
+                        "tracking_data": json.dumps(
+                            {"conversation_id": conversation_id}
+                        ),
+                    }
+                ]
+                send_message = True
+                return (recipients, messages, send_message)
+            elif message_text != "xxx":
+                answer = get_user_answer(
+                    session, conversation.responder_id, conversation.question_id
+                )
+                updated_answer = f"{answer.answer_text}\n {message_text}"
+
+                update_answer(session, answer.answer_id, answer_text=updated_answer)
+
+                conversation_manager.update_conversation(
+                    conversation_id=conversation_id,
+                    updated_attributes={
+                        CSAttributes.last_message_time: time.time(),
+                    },
+                )
+                send_message = False
+                return (
+                    [],
+                    [],
+                    send_message,
+                )
+
+    if (conversation_status == Status.responder_submitted_answer) and (
+        sender.user_id == conversation.sender_id
+    ):
+        if message_text.lower() == "taip":
+            """
+            atsakymas priimtas.
+            klausimas tampa approved.
+            conversation status pasikeicia i finished.
+            atnaujinam zinutes laika
+            """
+            conversation_manager.update_conversation(
+                conversation_id=conversation_id,
+                updated_attributes={
+                    CSAttributes.last_message_time: time.time(),
+                    CSAttributes.status: Status.sender_accepted_answer,
+                },
+            )
+
+            answer = get_user_answer(
+                session, conversation.responder_id, conversation.question_id
+            )
+
+            recipients = [
+                get_user_by_user_id(getattr(conversation, CSAttributes.sender_id))
+            ]
+            messages = [
+                {
+                    "message_text": answer.answer_text,
+                    "tracking_data": json.dumps({"conversation_id": conversation_id}),
+                }
+            ]
+            send_message = True
+            return (
+                [],
+                [],
+                send_message,
+            )
+
+        if message_text.lower() == "ne":
+            """
+            atsakymas atmestas.
+            conversation status pasikeicia i rejected.
+            atnaujinam zinutes laika
+            perziurim ar yra responderiu. jeigu yra paimam pirma ir siunciam jam. Pakeiciam statusa i sent to responder.
+            reikia patikrinti, ar responder neturi aktyviu klausimu ir atsakymu. is respnder available?
+            """
+            conversation_manager.update_conversation(
+                conversation_id=conversation_id,
+                updated_attributes={
+                    CSAttributes.last_message_time: time.time(),
+                    CSAttributes.status: Status.sender_rejected_answer,
+                },
+            )
+            responder_id = None
+            for _responder_id in conversation.responder_list:
+                if conversation_manager.is_user_available(_responder_id):
+                    responder_id = _responder_id
+                    break
+            if responder_id is not None:
+                conversation.responder_list.remove(responder_id)
+                conversation_manager.update_conversation(
+                    conversation_id=conversation_id,
+                    updated_attributes={
+                        CSAttributes.active_responder_id: responder_id,
+                        CSAttributes.status: Status.sent_question_to_responder,
+                        CSAttributes.last_message_time: time.time(),
+                    },
+                )
+                question = get_question(session, conversation.question_id)
+                recipients = [get_user_by_user_id(responder_id)]
+                messages = [
+                    {
+                        "message_text": f"Prašau atsakyti į klausimą :) {question.question_text}",
+                        "tracking_data": json.dumps(
+                            {"conversation_id": conversation_id}
+                        ),
+                    }
+                ]
+                send_message = True
+                return (
+                    recipients,
+                    messages,
+                    send_message,
+                )
+            if responder_id is None:
+                send_message = False
+                return (
+                    [],
+                    [],
+                    send_message,
+                )
 
 
 def parse_message(session, sender_viber_id, message_dict):
