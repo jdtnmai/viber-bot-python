@@ -162,7 +162,7 @@ def does_question_have_answer(answer_candidate):
 
 
 def asking_question_flow(conversation_manager, session, message_text, sender):
-    conversation_id = ask_question(session, message_text, sender)
+    conversation_id = ask_question(conversation_manager, session, message_text, sender)
     tracking_data = {"conversation_id": conversation_id}
 
     answer_candidate = get_question_answer()
