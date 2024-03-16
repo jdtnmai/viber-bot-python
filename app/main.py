@@ -160,27 +160,10 @@ def show_foxbot_face():
 @app.route("/", methods=["POST"])
 def incoming():
     session = Session()
-
-    viber_request = viber.parse_request(request.get_data().decode("utf8"))
-    fm = FlowManager(session, viber, viber_request)
-    fm.execute_flow()
-    session.close()
-
-    logger.debug("received request. post data: {0}".format(viber_request))
-
     if isinstance(viber_request, ViberMessageRequest):
-        logger.debug(f"viber request user id :  {viber_request.sender.id}")
-        logger.debug(f"message :  {viber_request.message}")
-        message_dict = viber_request.message.to_dict()
-        sender_viber_id = viber_request.sender.id
-        new_message_dicts, recipients_list, send_message = parse_message(
-            session,
-            sender_viber_id,
-            message_dict,
-        )
-        if send_message:
-            new_message = MessageBuilder.build_viber_message("", {})
-            MessageSenger.send_viber_message(viber, new_message, sender_viber_id)
+        viber_request = viber.parse_request(request.get_data().decode("utf8"))
+        fm = FlowManager(session, viber, viber_request)
+        fm.execute_flow()
 
     elif (
         isinstance(viber_request, ViberConversationStartedRequest)

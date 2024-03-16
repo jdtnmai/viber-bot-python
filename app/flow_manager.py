@@ -1,7 +1,9 @@
+from app.constants import WELCOME_HELP_MESSAGE
+from app.message_utils import MessageBuilder, MessageSenger
 from app.viber_chat_bot_logic import get_message_media
-from app.flow_manager_helpers import parse_tracking_data, g
+from app.flow_manager_helpers import parse_tracking_data
 
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 
 @dataclass
@@ -19,7 +21,18 @@ class Intention:
     welcome_help: bool = False
 
 
+class TrackingData:
+    conversation_id: int = None
+    system_message: bool = False
+
+
 class FlowManager:
+
+    def __init__(self, session, viber, viber_request):
+        self.session = session
+        self.viber = viber
+        self.viber_message = self.parse_viber_request(viber_request=viber_request)
+
     @staticmethod
     def parse_viber_request(viber_request):
         message_dict = viber_request.message.to_dict()
@@ -40,12 +53,20 @@ class FlowManager:
 
         return intentions
 
-    def __init__(self, session, viber, viber_request):
-        self.session = session
-        self.viber = viber
-        self.viber_message = self.parse_viber_request(viber_request=viber_request)
+    def welcome_help_flow(self):
+        welcome_help_message_text = WELCOME_HELP_MESSAGE
+        tracking_data = TrackingData()
+        tracking_data.system_message = True
 
-    def welcome_help_flow(self):...
+        viber_message = MessageBuilder.build_viber_message(
+            message_text=welcome_help_message_text,
+            tracking_data=asdict(tracking_data),
+        )
+        MessageSenger.send_viber_messagess(
+            viber=self.viber,
+            recipient_viber_id=self.viber_message.sender_viber_id,
+            viber_message=viber_message,
+        )
 
     def ask_question_flow(self):
         """
@@ -56,8 +77,7 @@ class FlowManager:
         """
         ...
 
-        
-    def list_unanswered_question_flow(self):...
+    def list_unanswered_question_flow(self): ...
 
     def review_flow(self): ...
 
@@ -76,5 +96,4 @@ class FlowManager:
         elif self.intentions.list_unanswered_question:
             self.list_unanswered_question_flow()
         elif self.viber_message.tracking_data:
-        
-    
+            ...
