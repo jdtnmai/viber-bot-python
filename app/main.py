@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, Response, send_file
 from sqlalchemy import inspect
 from sqlalchemy.orm import aliased
+from app.flow_manager import FlowManager
+from app.message_utils import MessageBuilder, MessageSenger
 from app.postgre_entities import ChatBotUser, Question, Answer
 from app.postgre_entities import Session
 from app.viber_chat_bot_logic import parse_message, review_message_statuses
@@ -155,20 +157,15 @@ def show_foxbot_face():
     return send_file(face_path, mimetype="image/png")
 
 
-def send_viber_messages(viber, new_message_dicts, recipients_list):
-    logger.debug(f"new_message_dicts, {new_message_dicts}")
-    new_messages = [TextMessage(**new_message) for new_message in new_message_dicts]
-    for user in recipients_list:
-        logger.debug(f"chatbot users : {user.viber_id}")
-        sent_message_response = viber.send_messages(user.viber_id, new_messages)
-        logger.debug(f"sent message response: {sent_message_response}")
-
-
 @app.route("/", methods=["POST"])
 def incoming():
     session = Session()
 
     viber_request = viber.parse_request(request.get_data().decode("utf8"))
+    fm = FlowManager(session, viber, viber_request)
+    fm.execute_flow()
+    session.close()
+
     logger.debug("received request. post data: {0}".format(viber_request))
 
     if isinstance(viber_request, ViberMessageRequest):
@@ -182,7 +179,8 @@ def incoming():
             message_dict,
         )
         if send_message:
-            send_viber_messages(viber, new_message_dicts, recipients_list)
+            new_message = MessageBuilder.build_viber_message("", {})
+            MessageSenger.send_viber_message(viber, new_message, sender_viber_id)
 
     elif (
         isinstance(viber_request, ViberConversationStartedRequest)
