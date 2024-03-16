@@ -131,6 +131,9 @@ def ask_question(session, message_text, sender):
         conversation_id=conversation_id,
         updated_attributes={CSAttributes.status: Status.sender_asked_question},
     )
+    logger.debug(
+        f"conversation_manager conversation {conversation_manager.conversations}"
+    )
     logger.debug(f"conversation statuses: {conversation_manager.conversations}")
 
     # From here down we must refactor to decouple message sending operation.
@@ -409,8 +412,9 @@ def parse_message(session, sender_viber_id, message_dict):
     message_text = message_dict["text"]
 
     tracking_data = parse_tracking_data(message_dict)
+    logger.debug(f"tracking_data {tracking_data}")
     logger.debug(
-        f'tracking_data {tracking_data}, {"conversation_id" not in tracking_data}'
+        f"conversation_manager conversation {conversation_manager.conversations}"
     )
     if "conversation_id" not in tracking_data:
         conversation_id = None
