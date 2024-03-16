@@ -227,7 +227,7 @@ def conversation_flow(
         we create answer object, add answer and update status, message recieved time.  dont send message
         """
         exists = answer_exists(
-            session, conversation.responder_id, conversation.question_id
+            session, conversation.active_responder_id, conversation.question_id
         )
         if not exists:
             answer = create_answer(
