@@ -399,6 +399,8 @@ def conversation_flow(
 
 
 def parse_message(session, sender_viber_id, message_dict):
+    logger.debug(f"incoming_message_text {message_dict['text']}")
+    logger.debug(f"conversation_manager_id {id(conversation_manager)}")
     logger.debug("Checking messages statuses before parsing a message")
     review_message_statuses(conversation_manager)
 
