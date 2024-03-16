@@ -22,7 +22,7 @@ from datetime import datetime
 
 
 # Create the SQLAlchemy engine
-engine = create_engine(os.environ["DATABASE_URL"])
+engine = create_engine(os.environ["DATABASE_URL_2"])
 
 Session = sessionmaker(bind=engine)
 
