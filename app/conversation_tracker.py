@@ -117,7 +117,7 @@ class ConversationManager:
 conversation_manager = ConversationManager()
 
 
-def create_conversation(conversation_manager, sender_id, question_id):
+def create_conversation(sender_id, question_id):
     conversation_id = conversation_manager.get_next_conversation_id()
     conversation = ConversationStatus(
         conversation_id=conversation_id,
