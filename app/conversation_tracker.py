@@ -114,18 +114,3 @@ class ConversationManager:
                 return False
             else:
                 return True
-
-
-conversation_manager = ConversationManager()
-
-
-def create_conversation(sender_id, question_id):
-    conversation_id = conversation_manager.get_next_conversation_id()
-    conversation = ConversationStatus(
-        conversation_id=conversation_id,
-        sender_id=sender_id,
-        question_id=question_id,
-    )
-
-    conversation_manager.add_conversation(conversation_id, conversation)
-    return conversation_id

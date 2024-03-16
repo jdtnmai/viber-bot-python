@@ -18,10 +18,22 @@ from logger import logger
 from app.conversation_tracker import (
     CSAttributes,
     Status,
-    conversation_manager,
+    ConversationManager,
     ConversationStatus,
-    create_conversation,
 )
+
+
+def create_conversation(conversation_manager, sender_id, question_id):
+    conversation_id = conversation_manager.get_next_conversation_id()
+    conversation = ConversationStatus(
+        conversation_id=conversation_id,
+        sender_id=sender_id,
+        question_id=question_id,
+    )
+
+    conversation_manager.add_conversation(conversation_id, conversation)
+    return conversation_id
+
 
 logger.debug("entered viber_chat_bot_logic")
 
@@ -119,10 +131,11 @@ def get_message_media(message_dict):
     return media_link
 
 
-def ask_question(session, message_text, sender):
+def ask_question(conversation_manager, session, message_text, sender):
     question = create_question(session, message_text, sender.user_id)
 
     conversation_id = create_conversation(
+        conversation_manager,
         sender.user_id,
         question.question_id,
     )
@@ -148,7 +161,7 @@ def does_question_have_answer(answer_candidate):
     return False
 
 
-def asking_question_flow(session, message_text, sender):
+def asking_question_flow(conversation_manager, session, message_text, sender):
     conversation_id = ask_question(session, message_text, sender)
     tracking_data = {"conversation_id": conversation_id}
 
@@ -399,8 +412,9 @@ def conversation_flow(
 
 
 def parse_message(session, sender_viber_id, message_dict):
+    conversation_manager = ConversationManager()
     logger.debug(f"incoming_message_text {message_dict['text']}")
-    logger.debug(f"conversation_manager_id {id(conversation_manager)}")
+    logger.debug(f"parse message conversation_manager_id {id(conversation_manager)}")
     logger.debug("Checking messages statuses before parsing a message")
     review_message_statuses(conversation_manager)
 
@@ -452,7 +466,7 @@ def parse_message(session, sender_viber_id, message_dict):
     logger.debug(f"intentions {intention}")
     if intention["asking_question"]:  # "klausimas"
         messages_out, recipients_list, send_message = asking_question_flow(
-            session, message_text, sender
+            conversation_manager, session, message_text, sender
         )
         return (
             messages_out,

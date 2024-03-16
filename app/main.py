@@ -4,7 +4,7 @@ from sqlalchemy.orm import aliased
 from app.postgre_entities import ChatBotUser, Question, Answer
 from app.postgre_entities import Session
 from app.viber_chat_bot_logic import parse_message, review_message_statuses
-from app.conversation_tracker import conversation_manager
+from app.conversation_tracker import ConversationManager
 
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
@@ -58,6 +58,8 @@ t.start()
 
 scheduler2 = sched.scheduler(time.time, time.sleep)
 # scheduler2.enter(5, 1, set_webhook, (viber,))
+conversation_manager = ConversationManager()
+logger.debug(f"main function conversation_manager_id {id(conversation_manager)}")
 scheduler2.enter(60, 1, conversation_manager_review, (conversation_manager,))
 t2 = threading.Thread(target=scheduler2.run)
 t2.start()
