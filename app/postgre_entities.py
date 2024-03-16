@@ -22,7 +22,7 @@ from datetime import datetime
 
 
 # Create the SQLAlchemy engine
-engine = create_engine(os.environ["DATABASE_URL_2"])
+engine = create_engine(os.environ["DATABASE_URL"])
 
 Session = sessionmaker(bind=engine)
 
@@ -53,26 +53,6 @@ class Question(Base):
     user = relationship("ChatBotUser")
     answer = relationship("Answer", back_populates="question")
 
-    def to_dict(self):
-        return {
-            "question_id": self.question_id,
-            "user_id": self.user_id,
-            "created_at": str(
-                self.created_at
-            ),  # Convert to string for JSON serialization
-        }
-
-    def to_json(self):
-        return json.dumps(
-            {
-                "question_id": self.question_id,
-                "user_id": self.user_id,
-                "created_at": str(
-                    self.created_at
-                ),  # Convert to string for JSON serialization
-            }
-        )
-
 
 # Define the Answer table
 class Answer(Base):
@@ -87,30 +67,32 @@ class Answer(Base):
 
     question = relationship("Question", back_populates="answer")
     user = relationship("ChatBotUser")
+    conversation = relationship(
+        "Conversation", back_populates="answer", uselist=False
+    )  # Ensure one-to-one relation
 
-    def to_dict(self):
-        return {
-            "answer_id": self.answer_id,
-            "question_id": self.question_id,
-            "user_id": self.user_id,
-            "approved": self.approved,
-            "created_at": str(
-                self.created_at
-            ),  # Convert to string for JSON serialization
-        }
 
-    def to_json(self):
-        return json.dumps(
-            {
-                "answer_id": self.answer_id,
-                "question_id": self.question_id,
-                "user_id": self.user_id,
-                "approved": self.approved,
-                "created_at": str(
-                    self.created_at
-                ),  # Convert to string for JSON serialization
-            }
-        )
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    conversation_id = Column(Integer, primary_key=True)
+    question_id = Column(Integer, ForeignKey("questions.question_id"))
+    asker_user_id = Column(Integer, ForeignKey("chat_bot_users.user_id"))
+    responder_user_id = Column(Integer, ForeignKey("chat_bot_users.user_id"))
+    answer_id = Column(
+        Integer, ForeignKey("answers.answer_id"), nullable=True
+    )  # Link to the Answer table
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    status = Column(String)  # e.g., "pending", "answered", "closed"
+
+    # Relationships
+    question = relationship("Question")
+    asker = relationship("ChatBotUser", foreign_keys=[asker_user_id])
+    responder = relationship("ChatBotUser", foreign_keys=[responder_user_id])
+    answer = relationship(
+        "Answer", back_populates="conversation"
+    )  # Relationship to the Answer
 
 
 def create_user(session, name, viber_id, active=True):
@@ -244,20 +226,13 @@ def delete_answer(session, answer_id):
 ## main functions to work with data model
 
 
-def get_answered_questions(sessions): ...
-def get_unanswered_questions(session): ...
-def get_approved_answered_questions(session): ...
-
-
-def get_question_answers(session): ...
-def get_chat_bot_users(session): ...
-
-
 def create_tables(engine):
     Base.metadata.create_all(engine)
 
 
 if __name__ == "__main__":
+    create_tables(engine)
+
     import random
     from faker import Faker
 
@@ -265,17 +240,15 @@ if __name__ == "__main__":
 
     # Create a session
     session = Session()
-
-    # Generate 3 random users
-    users = []
-    for _ in range(3):
-        user = create_user(session, name=fake.name(), viber_id=fake.uuid4())
-        users.append(user)
+    users = [
+        create_user(session, name="BMW 3", viber_id=os.environ["viber_id_1"]),
+        create_user(session, name="Ford Mustang", viber_id=os.environ["viber_id_2"]),
+    ]
 
     # Generate 3 questions per user
     questions = []
     for user in users:
-        for _ in range(3):
+        for _ in range(2):
             question_text = fake.sentence()
             question = create_question(
                 session, question_text=question_text, user_id=user.user_id
@@ -284,7 +257,7 @@ if __name__ == "__main__":
 
     # Generate 5 answers per user
     for user in users:
-        for _ in range(5):
+        for _ in range(2):
             answer_text = fake.text()
             question = random.choice(questions)
             answer = create_answer(
