@@ -50,7 +50,9 @@ class ConversationManager:
         return cls._instance
 
     def __init__(self):
-        self.conversations = {}
+        with self._lock:
+            if not hasattr(self, "conversations"):
+                self.conversations = {}
 
     def get_next_conversation_id(self):
         with self._lock:
