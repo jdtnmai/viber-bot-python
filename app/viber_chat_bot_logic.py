@@ -416,12 +416,13 @@ def parse_message(session, sender_viber_id, message_dict):
         conversation_id = None
         conversation_status = None
     else:
-        logger.debug(
-            f"conversation_id {conversation_id}, {conversation_manager.conversations}"
-        )
+
         conversation_id = tracking_data.get("conversation_id")
         conversation_status = conversation_manager.get_conversation_status(
             conversation_id
+        )
+        logger.debug(
+            f"conversation_id {conversation_id}, {conversation_manager.conversations}"
         )
 
     logger.debug(
