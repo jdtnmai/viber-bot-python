@@ -123,10 +123,10 @@ def ask_question(session, message_text, sender):
     question = create_question(session, message_text, sender.user_id)
 
     conversation_id = create_conversation(
-        conversation_manager,
         sender.user_id,
         question.question_id,
     )
+
     conversation_manager.update_conversation(
         conversation_id=conversation_id,
         updated_attributes={CSAttributes.status: Status.sender_asked_question},
