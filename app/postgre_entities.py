@@ -1,5 +1,6 @@
 import json
 import os
+from typing import List
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,6 +13,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    not_,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import declarative_base
@@ -78,7 +80,9 @@ class Conversation(Base):
     conversation_id = Column(Integer, primary_key=True)
     question_id = Column(Integer, ForeignKey("questions.question_id"))
     asker_user_id = Column(Integer, ForeignKey("chat_bot_users.user_id"))
-    responder_user_id = Column(Integer, ForeignKey("chat_bot_users.user_id"))
+    responder_user_id = Column(
+        Integer, ForeignKey("chat_bot_users.user_id"), nullable=True
+    )
     answer_id = Column(
         Integer, ForeignKey("answers.answer_id"), nullable=True
     )  # Link to the Answer table
@@ -163,6 +167,26 @@ def delete_question(session, question_id):
         session.commit()
 
 
+def get_questions_without_approved_answers(session) -> List[Question]:
+    """
+    Returns questions that don't have any approved answers.
+
+    :param session: SQLAlchemy session for database transactions.
+    :return: List of Question objects that meet the criteria.
+    """
+    # Subquery for questions with approved answers
+    subquery = (
+        session.query(Answer.question_id).filter(Answer.approved.is_(True)).subquery()
+    )
+
+    # Query for questions that are not in the subquery
+    questions_without_approved_answers = (
+        session.query(Question).filter(~Question.question_id.in_(subquery)).all()
+    )
+
+    return questions_without_approved_answers
+
+
 def create_answer(session, answer_text, question_id, user_id, approved=False):
     answer = Answer(
         answer_text=answer_text,
@@ -224,6 +248,70 @@ def delete_answer(session, answer_id):
 
 
 ## main functions to work with data model
+
+
+def get_users_not_in_active_pending_conversations(session) -> List[ChatBotUser]:
+    """
+    Query to find users not involved as asker or responder in active or pending conversations.
+
+    :param session: SQLAlchemy session for database transactions.
+    :return: List of ChatBotUser objects not involved in active or pending conversations.
+    """
+
+    # Subquery to find IDs of users who are askers or responders in active/pending conversations
+    active_pending_users = (
+        session.query(Conversation.asker_user_id, Conversation.responder_user_id)
+        .filter(
+            Conversation.status.in_(["active", "pending"])
+        )  # the list of statuses must be revied
+        .subquery()
+    )
+
+    # Query for users not in the subquery
+    users_not_involved = (
+        session.query(ChatBotUser)
+        .filter(not_(ChatBotUser.user_id.in_(active_pending_users)))
+        .all()
+    )
+
+    return users_not_involved
+
+
+from sqlalchemy.orm import Session
+from datetime import datetime
+
+# Assuming the Conversation class is defined elsewhere
+# from yourmodel import Conversation
+
+
+def create_new_conversation(
+    session,
+    question_id: int,
+    asker_user_id: int,
+    responder_user_id: int,
+    status: str,
+) -> "Conversation":
+    """
+    Create a new conversation and add it to the database.
+
+    :param session: SQLAlchemy session for database transactions.
+    :param question_id: ID of the question linked to the conversation.
+    :param asker_user_id: ID of the user who asked the question.
+    :param responder_user_id: ID of the user who responds to the question.
+    :param status: Status of the conversation (e.g., "pending"). active, pending, closed
+    :return: The newly created Conversation object.
+    """
+    new_conversation = Conversation(
+        question_id=question_id,
+        asker_user_id=asker_user_id,
+        responder_user_id=responder_user_id,
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
+        status=status,
+    )
+    session.add(new_conversation)
+    session.commit()
+    return new_conversation
 
 
 def create_tables(engine):
