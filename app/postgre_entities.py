@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from sqlalchemy import (
+    and_,
     create_engine,
     Column,
     Integer,
@@ -134,6 +135,22 @@ def delete_user(session, user_id):
         session.commit()
 
 
+def get_user_by_viber_id(session, viber_id) -> ChatBotUser:
+    return (
+        session.query(ChatBotUser)
+        .filter(and_(ChatBotUser.active == True, ChatBotUser.viber_id == viber_id))
+        .first()
+    )
+
+
+def get_user_by_user_id(session, user_id) -> ChatBotUser:
+    return (
+        session.query(ChatBotUser)
+        .filter(and_(ChatBotUser.active == True, ChatBotUser.user_id == user_id))
+        .first()
+    )
+
+
 def create_question(session, question_text, user_id):
     question = Question(
         question_text=question_text, user_id=user_id, created_at=datetime.now()
@@ -144,7 +161,7 @@ def create_question(session, question_text, user_id):
 
 
 # Function to retrieve a Question by question_id
-def get_question(session, question_id):
+def get_question(session, question_id) -> Question:
     return session.get(Question, question_id)
 
 
@@ -212,6 +229,23 @@ def answer_exists(session, user_id, question_id):
         return True
 
 
+def get_answer_by_user_for_question(session, question_id, user_id) -> Answer or None:  # type: ignore
+    """
+    Retrieve an answer for a specific question written by a given user.
+
+    :param session: SQLAlchemy session for database transactions.
+    :param question_id: The ID of the question to check.
+    :param user_id: The ID of the user who may have written an answer.
+    :return: The Answer object if found, otherwise None.
+    """
+    answer = (
+        session.query(Answer)
+        .filter(Answer.question_id == question_id, Answer.user_id == user_id)
+        .first()
+    )
+    return answer
+
+
 def get_user_answer(session, user_id, question_id):
     answer = (
         session.query(Answer)
@@ -222,7 +256,7 @@ def get_user_answer(session, user_id, question_id):
 
 
 # Function to retrieve an Answer by answer_id
-def get_answer(session, answer_id):
+def get_answer(session, answer_id) -> Answer:
     return session.get(Answer, answer_id)
 
 
@@ -250,9 +284,77 @@ def delete_answer(session, answer_id):
 ## main functions to work with data model
 
 
+from sqlalchemy.orm import Session
+from datetime import datetime
+
+
+def update_conversation(
+    session,
+    conversation_id: int,
+    question_id: int = None,
+    asker_user_id: int = None,
+    responder_user_id: int = None,
+    answer_id: int = None,
+    status: str = None,
+    updated_at: datetime = None,
+):
+    """
+    Updates fields of a specific conversation identified by conversation_id.
+
+    :param session: SQLAlchemy session for database transactions.
+    :param conversation_id: ID of the conversation to update.
+    :param question_id: New question ID to set, if any.
+    :param asker_user_id: New asker user ID to set, if any.
+    :param responder_user_id: New responder user ID to set, if any.
+    :param answer_id: New answer ID to set, if any.
+    :param status: New status to set, if any.
+    :param updated_at: New updated_at timestamp to set, if any. Defaults to current datetime if not provided.
+    """
+    # Retrieve the conversation object by ID
+    conversation = session.get(Conversation, conversation_id)
+
+    if conversation:
+        # Update provided fields
+        if question_id is not None:
+            conversation.question_id = question_id
+        if asker_user_id is not None:
+            conversation.asker_user_id = asker_user_id
+        if responder_user_id is not None:
+            conversation.responder_user_id = responder_user_id
+        if answer_id is not None:
+            conversation.answer_id = answer_id
+        if status is not None:
+            conversation.status = status
+        if updated_at is not None:
+            conversation.updated_at = updated_at
+        else:
+            # Automatically update the 'updated_at' field to the current time if not provided
+            conversation.updated_at = datetime.now()
+
+        # Commit the updates to the database
+        session.commit()
+
+
+def get_conversation_by_id(session, conversation_id) -> Conversation:
+    """
+    Retrieve a conversation by its ID.
+
+    :param session: SQLAlchemy session for database transactions.
+    :param conversation_id: The ID of the conversation to retrieve.
+    :return: The Conversation object if found, otherwise None.
+    """
+    conversation = (
+        session.query(Conversation)
+        .filter(Conversation.conversation_id == conversation_id)
+        .first()
+    )
+    return conversation
+
+
 def get_users_not_in_active_pending_conversations(session) -> List[ChatBotUser]:
     """
     Query to find users not involved as asker or responder in active or pending conversations.
+    TODO: As well responders can not be the ones who tried to answer the question.
 
     :param session: SQLAlchemy session for database transactions.
     :return: List of ChatBotUser objects not involved in active or pending conversations.

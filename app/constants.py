@@ -10,5 +10,6 @@ WELCOME_HELP_MESSAGE = "Labas! Aš esu FoxBot. Mano darbas padėti atsakyti į J
                 Atsakymą gali sudaryti daugiau nei viena žinutė.\n\
                 Pabaigus atsakymą atsiųskite žinutę xxx"
 
-QUESTION_PREFIX = "Prašau atsakyti į klausimą :) "
+QUESTION_PREFIX = "Prašau atsakyti į klausimą :)\n"
 UNANSWERED_QUESTIONS_PREFIX = "Neatsakyti klausimai:\n"
+ANSWER_PREFIX = "Siūlomas atsakymas.\n"
