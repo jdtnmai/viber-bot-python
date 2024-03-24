@@ -126,11 +126,6 @@ def get_chat_bot_intention(message_dict):
     )
 
 
-def get_message_media(message_dict):
-    media_link = message_dict.get("media", "")
-    return media_link
-
-
 def ask_question(conversation_manager, session, message_text, sender):
     question = create_question(session, message_text, sender.user_id)
 

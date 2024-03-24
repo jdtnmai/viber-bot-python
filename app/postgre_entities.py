@@ -1,4 +1,3 @@
-import json
 import os
 from typing import List
 from dotenv import load_dotenv
@@ -15,6 +14,9 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     not_,
+    select,
+    union,
+    union_all,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import declarative_base
@@ -354,25 +356,23 @@ def get_conversation_by_id(session, conversation_id) -> Conversation:
 def get_users_not_in_active_pending_conversations(session) -> List[ChatBotUser]:
     """
     Query to find users not involved as asker or responder in active or pending conversations.
-    TODO: As well responders can not be the ones who tried to answer the question.
-
-    :param session: SQLAlchemy session for database transactions.
-    :return: List of ChatBotUser objects not involved in active or pending conversations.
     """
 
-    # Subquery to find IDs of users who are askers or responders in active/pending conversations
-    active_pending_users = (
-        session.query(Conversation.asker_user_id, Conversation.responder_user_id)
-        .filter(
-            Conversation.status.in_(["active", "pending"])
-        )  # the list of statuses must be revied
-        .subquery()
+    # Create subqueries for asker and responder user IDs
+    asker_ids = select(Conversation.asker_user_id.label("user_id")).where(
+        Conversation.status.in_(["active", "pending"])
+    )
+    responder_ids = select(Conversation.responder_user_id.label("user_id")).where(
+        Conversation.status.in_(["active", "pending"])
     )
 
-    # Query for users not in the subquery
+    # Combine the two sets of IDs with UNION ALL (to ensure all are included, even if duplicated)
+    combined_ids = union_all(asker_ids, responder_ids).subquery()
+
+    # Use the combined IDs in a NOT IN filter to find users not involved in those conversations
     users_not_involved = (
         session.query(ChatBotUser)
-        .filter(not_(ChatBotUser.user_id.in_(active_pending_users)))
+        .filter(~ChatBotUser.user_id.in_(select(combined_ids.c.user_id)))
         .all()
     )
 

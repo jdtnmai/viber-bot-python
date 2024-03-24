@@ -19,7 +19,7 @@ from app.postgre_entities import (
     update_answer,
     update_conversation,
 )
-from app.viber_chat_bot_logic import get_message_media
+from app.flow_manager_helpers import get_message_media
 from app.flow_manager_helpers import parse_tracking_data
 
 from dataclasses import dataclass, asdict
@@ -74,13 +74,16 @@ class FlowManager:
 
     @staticmethod
     def parse_viber_request(viber_request):
-        message_dict = viber_request.message.to_dict()
-        return ViberMessage(
-            sender_viber_id=viber_request.sender.id,
-            message_text=message_dict["text"],
-            media_link=get_message_media(message_dict),
-            tracking_data=parse_tracking_data(message_dict),
-        )
+        if isinstance(viber_request, ViberMessage):
+            return viber_request
+        else:
+            message_dict = viber_request.message.to_dict()
+            return ViberMessage(
+                sender_viber_id=viber_request.sender.id,
+                message_text=message_dict["text"],
+                media_link=get_message_media(message_dict),
+                tracking_data=parse_tracking_data(message_dict),
+            )
 
     @staticmethod
     def get_message_intention(message_text):
@@ -119,18 +122,26 @@ class FlowManager:
         select rensponder. Respondes is not involved in an active conversation.
         send message to responder
         """
+        asker = get_user_by_viber_id(
+            session=self.session, viber_id=self.viber_message.sender_viber_id
+        )
         question = create_question(
             session=self.session,
             question_text=self.viber_message.message_text,
-            user_id=self.viber_message.sender_viber_id,
+            user_id=asker.user_id,
         )
         responders = get_users_not_in_active_pending_conversations(self.session)
         if responders:
+            responders = [
+                candidate_responder
+                for candidate_responder in responders
+                if candidate_responder.user_id != asker.user_id
+            ]  # make sure that the asker will not get to answer his question
             responder = responders.pop()
             conversation = create_new_conversation(
                 session=self.session,
                 question_id=question.question_id,
-                asker_user_id=self.viber_message.sender_viber_id,
+                asker_user_id=asker.user_id,
                 responder_user_id=responder.user_id,
                 status=ConversationStatus.active,
             )
@@ -146,7 +157,7 @@ class FlowManager:
 
             MessageSenger.send_viber_messagess(
                 viber=self.viber,
-                recipient_viber_id=responder.sender_viber_id,
+                recipient_viber_id=responder.viber_id,
                 viber_message=viber_message,
             )
 
@@ -156,7 +167,8 @@ class FlowManager:
             conversation = create_new_conversation(
                 session=self.session,
                 question_id=question.question_id,
-                asker_user_id=self.viber_message.sender_viber_id,
+                responder_user_id=None,
+                asker_user_id=asker.user_id,
                 status=ConversationStatus.pending,
             )
 
@@ -325,7 +337,7 @@ class FlowManager:
         ...
 
     def execute_flow(self):
-        self.intetions = self.get_message_intention(self.message_text)
+        self.intentions = self.get_message_intention(self.viber_message.message_text)
 
         if self.intentions.welcome_help:  # DONE
             self.welcome_help_flow()

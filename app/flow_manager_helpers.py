@@ -24,3 +24,8 @@ def parse_tracking_data(message_dict):
         return tracking_data
 
     return {}
+
+
+def get_message_media(message_dict):
+    media_link = message_dict.get("media", "")
+    return media_link
