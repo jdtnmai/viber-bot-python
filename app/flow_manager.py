@@ -294,7 +294,7 @@ class FlowManager:
             answer approved
             """
             update_answer(self.session, conversation.answer_id, approved=True)
-            update_conversation(
+            conversation = update_conversation(
                 self.session,
                 conversation_id=conversation.conversation_id,
                 status=ConversationStatus.closed,
@@ -312,7 +312,13 @@ class FlowManager:
                 status=ConversationStatus.active,
             )
             responders = get_users_not_in_active_pending_conversations(self.session)
+            responders = [
+                candidate_responder
+                for candidate_responder in responders
+                if candidate_responder.user_id != message_sender.user_id
+            ]
             if responders:
+
                 responder = responders.pop()
 
                 tracking_data = TrackingData(
@@ -332,7 +338,12 @@ class FlowManager:
                     viber_message=viber_message,
                 )
             else:
-                update_conversation(self.session, status=ConversationStatus.pending)
+                conversation = update_conversation(
+                    self.session,
+                    conversation_id=conversation.conversation_id,
+                    status=ConversationStatus.pending,
+                    reset_responder_and_answer=True,
+                )
 
     def review_flow(self):
         """

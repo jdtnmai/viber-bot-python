@@ -299,6 +299,7 @@ def update_conversation(
     answer_id: int = None,
     status: str = None,
     updated_at: datetime = None,
+    reset_responder_and_answer=False,
 ):
     """
     Updates fields of a specific conversation identified by conversation_id.
@@ -329,6 +330,9 @@ def update_conversation(
             conversation.status = status
         if updated_at is not None:
             conversation.updated_at = updated_at
+        if reset_responder_and_answer:
+            conversation.responder_user_id = None
+            conversation.answer_id = None
         else:
             # Automatically update the 'updated_at' field to the current time if not provided
             conversation.updated_at = datetime.now()
