@@ -71,6 +71,7 @@ class FlowManager:
         self.session = session
         self.viber = viber
         self.viber_message = self.parse_viber_request(viber_request=viber_request)
+        self.intentions = self.get_message_intention(self.viber_message.message_text)
 
     @staticmethod
     def parse_viber_request(viber_request):
@@ -351,31 +352,28 @@ class FlowManager:
         """
         ...
 
-    def execute_flow(self):
-        self.intentions = self.get_message_intention(self.viber_message.message_text)
-
-        if self.intentions.welcome_help:  # DONE
-            self.welcome_help_flow()
-        elif self.intentions.ask_question:  # DONE
-            self.ask_question_flow()
-        elif self.intentions.list_unanswered_question:  # DONE
-            self.list_unanswered_question_flow()
-        elif (
-            self.viber_message.tracking_data
-        ):  # we accept answer, or reply to the unanswered question list
-
-            if self.viber_message.tracking_data["flow"] == IntentionName.ask_question:
-                if self.viber_message.tracking_data["system_message"] == False:
-                    self.answer_question_flow()
-                elif self.viber_message.tracking_data["system_message"] == True:
-                    self.accept_answer_flow()
-
-            elif (
-                self.viber_message.tracking_data["flow"]
-                == IntentionName.list_unanswered_question
-            ):
-                self.list_unanswered_question_flow()
+    def handle_tracking_data_flow(self):
+        tracking_flow = self.viber_message.tracking_data.get("flow")
+        if tracking_flow == IntentionName.ask_question:
+            if self.viber_message.tracking_data["system_message"] == False:
+                self.answer_question_flow()
+            elif self.viber_message.tracking_data["system_message"] == True:
+                self.accept_answer_flow()
             else:
                 self.welcome_help_flow()
+        elif tracking_flow == IntentionName.list_unanswered_question:
+            self.list_unanswered_question_flow()
+        else:
+            self.welcome_help_flow()
+
+    def execute_flow(self):
+        if self.intentions.welcome_help:
+            self.welcome_help_flow()
+        elif self.intentions.ask_question:
+            self.ask_question_flow()
+        elif self.intentions.list_unanswered_question:
+            self.list_unanswered_question_flow()
+        elif self.viber_message.tracking_data:
+            self.handle_tracking_data_flow()
         else:
             self.welcome_help_flow()
