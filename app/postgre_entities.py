@@ -15,9 +15,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
-    not_,
     select,
-    union,
     union_all,
 )
 from sqlalchemy.orm import relationship
