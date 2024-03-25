@@ -2,6 +2,8 @@ import os
 from typing import List
 from dotenv import load_dotenv
 
+from logger import logger
+
 load_dotenv()
 
 from sqlalchemy import (
@@ -137,7 +139,7 @@ def delete_user(session, user_id):
         session.commit()
 
 
-def get_user_by_viber_id(session, viber_id) -> ChatBotUser:
+def get_user_by_viber_id(session: Session, viber_id: int) -> ChatBotUser:  # type: ignore
     return (
         session.query(ChatBotUser)
         .filter(and_(ChatBotUser.active == True, ChatBotUser.viber_id == viber_id))
@@ -363,15 +365,20 @@ def get_users_not_in_active_pending_conversations(session) -> List[ChatBotUser]:
     Query to find users not involved as asker or responder in active or pending conversations.
     """
 
-    # Create subqueries for asker and responder user IDs
-    asker_ids = select(Conversation.asker_user_id.label("user_id")).where(
-        Conversation.status.in_(["active", "pending"])
-    )
-    responder_ids = select(Conversation.responder_user_id.label("user_id")).where(
-        Conversation.status.in_(["active", "pending"])
+    # Ensure that only non-None asker and responder IDs are selected
+    asker_ids = (
+        select(Conversation.asker_user_id.label("user_id"))
+        .where(Conversation.asker_user_id.isnot(None))
+        .where(Conversation.status.in_(["active", "pending"]))
     )
 
-    # Combine the two sets of IDs with UNION ALL (to ensure all are included, even if duplicated)
+    responder_ids = (
+        select(Conversation.responder_user_id.label("user_id"))
+        .where(Conversation.responder_user_id.isnot(None))
+        .where(Conversation.status.in_(["active", "pending"]))
+    )
+
+    # Combine the two sets of IDs with UNION ALL
     combined_ids = union_all(asker_ids, responder_ids).subquery()
 
     # Use the combined IDs in a NOT IN filter to find users not involved in those conversations
@@ -380,6 +387,9 @@ def get_users_not_in_active_pending_conversations(session) -> List[ChatBotUser]:
         .filter(~ChatBotUser.user_id.in_(select(combined_ids.c.user_id)))
         .all()
     )
+
+    # Debug logging
+    logger.debug(f"Users not involved: {[user.user_id for user in users_not_involved]}")
 
     return users_not_involved
 

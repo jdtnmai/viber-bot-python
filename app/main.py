@@ -2,11 +2,8 @@ from flask import Flask, render_template, request, Response, send_file
 from sqlalchemy import inspect
 from sqlalchemy.orm import aliased
 from app.flow_manager import FlowManager
-from app.message_utils import MessageBuilder, MessageSenger
 from app.postgre_entities import ChatBotUser, Question, Answer
 from app.postgre_entities import Session
-from app.viber_chat_bot_logic import parse_message, review_message_statuses
-from app.conversation_tracker import ConversationManager
 
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
@@ -34,7 +31,7 @@ app = Flask(__name__)
 
 def conversation_manager_review(conversation_manager):
     logger.debug("Checking meesage status via conversation_manager_review every 60s. ")
-    review_message_statuses(conversation_manager)
+    # review_message_statuses(conversation_manager)
 
 
 viber = Api(
@@ -60,7 +57,7 @@ t.start()
 
 scheduler2 = sched.scheduler(time.time, time.sleep)
 # scheduler2.enter(5, 1, set_webhook, (viber,))
-conversation_manager = ConversationManager()
+conversation_manager = "ConversationManager()"
 logger.debug(f"main function conversation_manager_id {id(conversation_manager)}")
 scheduler2.enter(60, 1, conversation_manager_review, (conversation_manager,))
 t2 = threading.Thread(target=scheduler2.run)

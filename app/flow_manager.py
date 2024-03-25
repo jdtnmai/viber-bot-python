@@ -1,4 +1,5 @@
-from app.constants import (
+from typing import Tuple
+from app.flows.constants import (
     ANSWER_PREFIX,
     QUESTION_PREFIX,
     UNANSWERED_QUESTIONS_PREFIX,
@@ -11,8 +12,17 @@ from app.data_classes import (
     TrackingData,
     ViberMessage,
 )
+from app.flows.flow_ask_question import (
+    get_asker,
+    initiate_conversation,
+    select_responder,
+    send_question_to_responder,
+)
 from app.message_utils import MessageBuilder, MessageSenger
 from app.postgre_entities import (
+    ChatBotUser,
+    Conversation,
+    Question,
     create_answer,
     create_new_conversation,
     create_question,
@@ -26,10 +36,12 @@ from app.postgre_entities import (
     update_answer,
     update_conversation,
 )
-from app.flow_manager_helpers import get_message_media
-from app.flow_manager_helpers import parse_tracking_data
+from app.flows.flow_manager_helpers import get_message_media
+from app.flows.flow_manager_helpers import parse_tracking_data
 
 from dataclasses import asdict
+
+from logger import logger
 
 
 class FlowManager:
@@ -84,61 +96,25 @@ class FlowManager:
         )
 
     def ask_question_flow(self):
-        """
-        create conversation
-        create question
-        select rensponder. Respondes is not involved in an active conversation.
-        send message to responder
-        """
-        asker = get_user_by_viber_id(
-            session=self.session, viber_id=self.viber_message.sender_viber_id
-        )
+
+        asker = get_asker(self.session, self.viber_message.sender_viber_id)
+        if not asker:
+            logger.debug(
+                f"Asker not found for viber_id {self.viber_message.sender_viber_id}. Message {asdict(self.viber_message)}"
+            )
+
         question = create_question(
-            session=self.session,
-            question_text=self.viber_message.message_text,
-            user_id=asker.user_id,
+            self.session, self.viber_message.message_text, asker.user_id
         )
-        responders = get_users_not_in_active_pending_conversations(self.session)
-        if responders:
-            responders = [
-                candidate_responder
-                for candidate_responder in responders
-                if candidate_responder.user_id != asker.user_id
-            ]  # make sure that the asker will not get to answer his question
-            responder = responders.pop()
-            conversation = create_new_conversation(
-                session=self.session,
-                question_id=question.question_id,
-                asker_user_id=asker.user_id,
-                responder_user_id=responder.user_id,
-                status=ConversationStatus.active,
-            )
-            tracking_data = TrackingData(
-                conversation_id=conversation.conversation_id,
-                flow=IntentionName.ask_question,
-            )
 
-            viber_message = MessageBuilder.build_viber_message(
-                message_text=QUESTION_PREFIX + question.question_text,
-                tracking_data=asdict(tracking_data),
-            )
+        responder = select_responder(self.session, asker)
 
-            MessageSenger.send_viber_messagess(
-                viber=self.viber,
-                recipient_viber_id=responder.viber_id,
-                viber_message=viber_message,
-            )
+        conversation, send_question = initiate_conversation(
+            self.session, asker, responder, question
+        )
 
-        else:
-            # there are no active responders, what do we do? should we freeze the status and wait for an active responder?
-            #
-            conversation = create_new_conversation(
-                session=self.session,
-                question_id=question.question_id,
-                responder_user_id=None,
-                asker_user_id=asker.user_id,
-                status=ConversationStatus.pending,
-            )
+        if send_question:
+            send_question_to_responder(self.viber, responder, conversation, question)
 
     def answer_question_flow(self):
         """
@@ -302,9 +278,15 @@ class FlowManager:
 
                 MessageSenger.send_viber_messagess(
                     viber=self.viber,
-                    recipient_viber_id=responder.sender_viber_id,
+                    recipient_viber_id=responder.viber_id,
                     viber_message=viber_message,
                 )
+                conversation = update_conversation(
+                    self.session,
+                    conversation_id=conversation.conversation_id,
+                    responder_user_id=responder.user_id,
+                )
+
             else:
                 conversation = update_conversation(
                     self.session,
