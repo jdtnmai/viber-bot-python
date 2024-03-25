@@ -370,8 +370,11 @@ class FlowManager:
                 elif self.viber_message.tracking_data["system_message"] == True:
                     self.accept_answer_flow()
 
-            elif self.viber_message.tracking_data["flow"] == IntentionName.ask_question:
-                self.accept_answer_flow()
+            elif (
+                self.viber_message.tracking_data["flow"]
+                == IntentionName.list_unanswered_question
+            ):
+                self.list_unanswered_question_flow()
             else:
                 self.welcome_help_flow()
         else:
