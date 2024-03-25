@@ -197,6 +197,7 @@ class FlowManager:
                     conversation.responder_user_id,
                 )
                 conversation = update_conversation(
+                    session=self.session,
                     conversation_id=conversation.conversation_id,
                     answer_id=answer.answer_id,
                     status=ConversationStatus.active,
@@ -212,23 +213,25 @@ class FlowManager:
                     flow=IntentionName.answer_question,
                 )
                 answer_message = MessageBuilder.build_viber_message(
-                    message_text=message_text, tracking_data=tracking_data
+                    message_text=message_text, tracking_data=asdict(tracking_data)
                 )
-                asker = get_user_by_user_id(conversation.asker_user_id)
+                asker = get_user_by_user_id(
+                    session=self.session, user_id=conversation.asker_user_id
+                )
                 MessageSenger.send_viber_messagess(
                     self.viber,
                     recipient_viber_id=asker.viber_id,
                     viber_message=answer_message,
                 )
 
-                answer_acceptance_message = MessageBuilder.build_viber_message(
-                    message_text="Ar priimate atsakymą?\nAtsakykite taip arba ne.",
-                    tracking_data=tracking_data,
-                )
                 tracking_data = TrackingData(
                     conversation_id=conversation.conversation_id,
                     system_message=True,
                     flow=IntentionName.answer_question,
+                )
+                answer_acceptance_message = MessageBuilder.build_viber_message(
+                    message_text="Ar priimate atsakymą?\nAtsakykite taip arba ne.",
+                    tracking_data=asdict(tracking_data),
                 )
 
                 MessageSenger.send_viber_messagess(
@@ -238,6 +241,7 @@ class FlowManager:
                 )
 
                 conversation = update_conversation(
+                    session=self.session,
                     conversation_id=conversation.conversation_id,
                     status=ConversationStatus.waiting_for_approval,
                 )

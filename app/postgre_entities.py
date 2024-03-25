@@ -335,6 +335,7 @@ def update_conversation(
 
         # Commit the updates to the database
         session.commit()
+    return session.get(Conversation, conversation_id)
 
 
 def get_conversation_by_id(session, conversation_id) -> Conversation:
