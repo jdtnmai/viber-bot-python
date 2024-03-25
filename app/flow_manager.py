@@ -256,7 +256,7 @@ class FlowManager:
                 )
 
         if conversation.asker_user_id == message_sender.user_id:
-            self.answer_approval()
+            self.accept_answer_flow()
 
     def list_unanswered_question_flow(self):
         unanswered_questions = get_questions_without_approved_answers(self.session)
@@ -288,7 +288,7 @@ class FlowManager:
         message_sender = get_user_by_viber_id(
             self.session, self.viber_message.sender_viber_id
         )
-        if self.viber_message.text.lower().strip() == "taip":
+        if self.viber_message.message_text.lower().strip().startswith("taip"):
             """
             conversation status close
             answer approved
@@ -299,7 +299,7 @@ class FlowManager:
                 conversation_id=conversation.conversation_id,
                 status=ConversationStatus.closed,
             )
-        elif self.viber_message.text.lower().strip() == "ne":
+        elif self.viber_message.message_text.lower().strip().startswith("ne"):
             """
             conversation status close
             answer approved
@@ -356,16 +356,12 @@ class FlowManager:
             if self.viber_message.tracking_data["flow"] == IntentionName.ask_question:
                 if self.viber_message.tracking_data["system_message"] == False:
                     self.answer_question_flow()
-
-                elif (
-                    self.viber_message.tracking_data["flow"]
-                    == IntentionName.list_unanswered_question
-                ):
+                elif self.viber_message.tracking_data["system_message"] == True:
                     self.accept_answer_flow()
-                else:
-                    self.welcome_help_flow()
+
+            elif self.viber_message.tracking_data["flow"] == IntentionName.ask_question:
+                self.accept_answer_flow()
             else:
                 self.welcome_help_flow()
-
         else:
             self.welcome_help_flow()
