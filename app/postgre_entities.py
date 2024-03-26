@@ -137,7 +137,7 @@ def delete_user(session, user_id):
         session.commit()
 
 
-def get_user_by_viber_id(session: Session, viber_id: int) -> ChatBotUser:  # type: ignore
+def get_user_by_viber_id(session: Session, viber_id: str) -> ChatBotUser:  # type: ignore
     return (
         session.query(ChatBotUser)
         .filter(and_(ChatBotUser.active == True, ChatBotUser.viber_id == viber_id))

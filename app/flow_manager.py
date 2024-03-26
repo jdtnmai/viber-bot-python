@@ -112,7 +112,7 @@ class FlowManager:
         conversation, send_question = initiate_conversation(
             self.session, asker, responder, question
         )
-
+        logger.debug(f"send_question {send_question}")
         if send_question:
             send_question_to_responder(self.viber, responder, conversation, question)
 
