@@ -9,7 +9,7 @@ from app.flow_manager import FlowManager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from app.postgre_entities import Answer, Base, ChatBotUser, Conversation, Question
+from app.data_models import Answer, Base, ChatBotUser, Conversation, Question
 
 
 import logging

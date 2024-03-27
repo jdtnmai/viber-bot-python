@@ -3,7 +3,7 @@ from typing import Tuple
 from app.data_classes import ConversationStatus, IntentionName, TrackingData
 from app.flows.constants import QUESTION_PREFIX
 from app.message_utils import MessageBuilder, MessageSenger
-from app.postgre_entities import (
+from app.data_models import (
     ChatBotUser,
     Conversation,
     Question,

@@ -1,14 +1,11 @@
+from datetime import datetime
+from logger import logger
 import os
 from typing import List
-from dotenv import load_dotenv
 
-from logger import logger
-
-load_dotenv()
 
 from sqlalchemy import (
     and_,
-    create_engine,
     Column,
     Integer,
     String,
@@ -21,17 +18,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import declarative_base
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+
 from datetime import datetime
 
 
-# Create the SQLAlchemy engine
-engine = create_engine(os.environ["DATABASE_URL_2"])
-
-Session = sessionmaker(bind=engine)
-
-# Create a base class for declarative class definitions
 Base = declarative_base()
 
 
@@ -137,7 +127,7 @@ def delete_user(session, user_id):
         session.commit()
 
 
-def get_user_by_viber_id(session: Session, viber_id: str) -> ChatBotUser:  # type: ignore
+def get_user_by_viber_id(session, viber_id: str) -> ChatBotUser:  # type: ignore
     return (
         session.query(ChatBotUser)
         .filter(and_(ChatBotUser.active == True, ChatBotUser.viber_id == viber_id))
@@ -283,13 +273,6 @@ def delete_answer(session, answer_id):
         session.commit()
 
 
-## main functions to work with data model
-
-
-from sqlalchemy.orm import Session
-from datetime import datetime
-
-
 def update_conversation(
     session,
     conversation_id: int,
@@ -392,9 +375,6 @@ def get_users_not_in_active_pending_conversations(session) -> List[ChatBotUser]:
     return users_not_involved
 
 
-from sqlalchemy.orm import Session
-from datetime import datetime
-
 # Assuming the Conversation class is defined elsewhere
 # from yourmodel import Conversation
 
@@ -427,49 +407,3 @@ def create_new_conversation(
     session.add(new_conversation)
     session.commit()
     return new_conversation
-
-
-def create_tables(engine):
-    Base.metadata.create_all(engine)
-
-
-if __name__ == "__main__":
-    create_tables(engine)
-
-    import random
-    from faker import Faker
-
-    fake = Faker()
-
-    # Create a session
-    session = Session()
-    users = [
-        create_user(session, name="BMW 3", viber_id=os.environ["viber_id_1"]),
-        create_user(session, name="Ford Mustang", viber_id=os.environ["viber_id_2"]),
-    ]
-
-    # Generate 3 questions per user
-    questions = []
-    for user in users:
-        for _ in range(2):
-            question_text = fake.sentence()
-            question = create_question(
-                session, question_text=question_text, user_id=user.user_id
-            )
-            questions.append(question)
-
-    # Generate 5 answers per user
-    for user in users:
-        for _ in range(2):
-            answer_text = fake.text()
-            question = random.choice(questions)
-            answer = create_answer(
-                session,
-                answer_text=answer_text,
-                question_id=question.question_id,
-                user_id=user.user_id,
-            )
-
-    # Commit and close the session
-    session.commit()
-    session.close()

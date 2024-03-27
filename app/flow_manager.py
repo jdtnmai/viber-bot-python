@@ -19,7 +19,7 @@ from app.flows.flow_ask_question import (
     send_question_to_responder,
 )
 from app.message_utils import MessageBuilder, MessageSenger
-from app.postgre_entities import (
+from app.data_models import (
     ChatBotUser,
     Conversation,
     Question,

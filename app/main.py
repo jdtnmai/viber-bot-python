@@ -2,8 +2,8 @@ from flask import Flask, render_template, request, Response, send_file
 from sqlalchemy import inspect
 from sqlalchemy.orm import aliased
 from app.flow_manager import FlowManager
-from app.postgre_entities import ChatBotUser, Question, Answer
-from app.postgre_entities import Session
+from app.data_models import ChatBotUser, Question, Answer
+from app.create_postgre_session import Session
 
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
