@@ -157,6 +157,7 @@ def show_foxbot_face():
 @app.route("/", methods=["POST"])
 def incoming():
     session = Session()
+    viber_request = viber.parse_request(request.get_data().decode("utf8"))
     if isinstance(viber_request, ViberMessageRequest):
         viber_request = viber.parse_request(request.get_data().decode("utf8"))
         fm = FlowManager(session, viber, viber_request)
