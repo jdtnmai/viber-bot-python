@@ -1,10 +1,9 @@
 from flask import Flask, render_template, request, Response, send_file
 from sqlalchemy import inspect
 from sqlalchemy.orm import aliased
-from app.postgre_entities import ChatBotUser, Question, Answer
-from app.postgre_entities import Session
-from app.viber_chat_bot_logic import parse_message, review_message_statuses
-from app.conversation_tracker import conversation_manager
+from app.flow_manager import FlowManager
+from app.data_models import ChatBotUser, Question, Answer
+from app.create_postgre_session import Session
 
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
@@ -32,7 +31,7 @@ app = Flask(__name__)
 
 def conversation_manager_review(conversation_manager):
     logger.debug("Checking meesage status via conversation_manager_review every 60s. ")
-    review_message_statuses(conversation_manager)
+    # review_message_statuses(conversation_manager)
 
 
 viber = Api(
@@ -58,6 +57,8 @@ t.start()
 
 scheduler2 = sched.scheduler(time.time, time.sleep)
 # scheduler2.enter(5, 1, set_webhook, (viber,))
+conversation_manager = "ConversationManager()"
+logger.debug(f"main function conversation_manager_id {id(conversation_manager)}")
 scheduler2.enter(60, 1, conversation_manager_review, (conversation_manager,))
 t2 = threading.Thread(target=scheduler2.run)
 t2.start()
@@ -156,26 +157,11 @@ def show_foxbot_face():
 @app.route("/", methods=["POST"])
 def incoming():
     session = Session()
-
     viber_request = viber.parse_request(request.get_data().decode("utf8"))
-    logger.debug("received request. post data: {0}".format(viber_request))
-
     if isinstance(viber_request, ViberMessageRequest):
-        logger.debug(f"viber request user id :  {viber_request.sender.id}")
-        logger.debug(f"message :  {viber_request.message}")
-        message_dict = viber_request.message.to_dict()
-        sender_viber_id = viber_request.sender.id
-        new_message_dicts, recipients_list = parse_message(
-            session,
-            sender_viber_id,
-            message_dict,
-        )
-        logger.debug(f"new_message_dicts, {new_message_dicts}")
-        new_messages = [TextMessage(**new_message) for new_message in new_message_dicts]
-        for user in recipients_list:
-            logger.debug(f"chatbot users : {user.viber_id}")
-            sent_message_response = viber.send_messages(user.viber_id, new_messages)
-            logger.debug(f"sent message response: {sent_message_response}")
+        viber_request = viber.parse_request(request.get_data().decode("utf8"))
+        fm = FlowManager(session, viber, viber_request)
+        fm.execute_flow()
 
     elif (
         isinstance(viber_request, ViberConversationStartedRequest)
