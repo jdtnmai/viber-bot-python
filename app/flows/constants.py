@@ -14,3 +14,6 @@ WELCOME_HELP_MESSAGE = "Labas! Aš esu FoxBot. Mano darbas padėti atsakyti į J
 QUESTION_PREFIX = "Prašau atsakyti į klausimą :)\n"
 UNANSWERED_QUESTIONS_PREFIX = "Neatsakyti klausimai:\n"
 ANSWER_PREFIX = "Siūlomas atsakymas.\n"
+SYSTEM_MESSAGE_PARSING_ANSWER_FAILED = (
+    "Nepavyko suprasti siųsto atsakymo. Pradėkite nuo pradžių siųsdami Labas :)"
+)

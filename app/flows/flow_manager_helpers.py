@@ -59,3 +59,14 @@ def get_message_intention(message_text):
     )
 
     return intentions
+
+
+def extract_number_from_string(s):
+    number = ""
+    for char in s:
+        if char.isdigit():
+            number += char
+        else:
+            break  # Stop iterating when a non-digit character is encountered
+    if number:
+        return int(number)

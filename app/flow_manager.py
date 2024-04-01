@@ -1,4 +1,5 @@
 from app.flows.constants import (
+    SYSTEM_MESSAGE_PARSING_ANSWER_FAILED,
     UNANSWERED_QUESTIONS_PREFIX,
 )
 from app.data_classes import (
@@ -21,13 +22,18 @@ from app.flows.flow_list_unanswered_questions import get_and_send_unanswered_que
 from app.flows.flow_welcome_help import send_welcome_help_message
 from app.message_utils import MessageBuilder, MessageSenger
 from app.data_models import (
+    create_answer,
     create_question,
+    get_answer_by_user_for_question,
     get_conversation_by_id,
+    get_question,
     get_questions_without_approved_answers,
     get_user_by_viber_id,
+    update_answer,
     update_conversation,
 )
 from app.flows.flow_manager_helpers import (
+    extract_number_from_string,
     get_message_intention,
     parse_viber_request,
 )
@@ -122,6 +128,59 @@ class FlowManager:
     def list_unanswered_question_flow(self):
         get_and_send_unanswered_questions(self.session, self.viber, self.viber_message)
 
+    def send_system_error_message_for_accept_answer_to_unanswered_question_flow(self):
+        tracking_data = TrackingData(
+            flow=IntentionName.list_unanswered_question, system_message=True
+        )
+
+        viber_message = MessageBuilder.build_viber_message(
+            message_text=SYSTEM_MESSAGE_PARSING_ANSWER_FAILED,
+            tracking_data=asdict(tracking_data),
+        )
+
+        MessageSenger.send_viber_messagess(
+            viber=self.viber,
+            recipient_viber_id=self.viber_message.sender_viber_id,
+            viber_message=viber_message,
+        )
+
+    def accept_answer_to_unanswered_question_flow(self):
+        mapping = self.viber_message.tracking_data.get("unanswered_question_ids")
+        question_number = extract_number_from_string(self.viber_message.message_text)
+        if question_number is not None:
+            question_id = mapping.get(question_number)
+            question = get_question(session=self.session, question_id=question_id)
+            user = get_user_by_viber_id(
+                self.session, self.viber_message.sender_viber_id
+            )
+            answer = get_answer_by_user_for_question(
+                self.session, question_id, user.user_id
+            )
+            if answer is None:
+                create_answer(
+                    self.session,
+                    self.viber_message.message_text,
+                    question.question_id,
+                    user.user_id,
+                    approved=False,
+                )
+            elif answer is not None:
+                if self.viber_message.message_text.lower().strip() != "xxx":
+                    update_answer(
+                        self.session,
+                        answer.answer_id,
+                        answer_text=self.viber_message.message_text,
+                    )
+                elif self.viber_message.message_text.lower().strip() == "xxx":
+                    update_answer(
+                        self.session,
+                        answer.answer_id,
+                        approved=True,
+                    )
+
+        else:
+            self.send_system_error_message_for_accept_answer_to_unanswered_question_flow()
+
     def review_flow(self):
         """
         review every message and send system message to nudge users to reply to a message
@@ -137,8 +196,11 @@ class FlowManager:
                 self.accept_answer_flow()
             else:
                 self.welcome_help_flow()
-        elif tracking_flow == IntentionName.list_unanswered_question:
-            self.list_unanswered_question_flow()
+        elif (tracking_flow == IntentionName.list_unanswered_question) and (
+            self.viber_message.tracking_data.get("unanswered_question_ids") is not None
+        ):
+            self.accept_answer_to_unanswered_question_flow()
+
         else:
             self.welcome_help_flow()
 
