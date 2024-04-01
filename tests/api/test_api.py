@@ -35,7 +35,7 @@ def test_parse_request_not_json():
     viber = Api(VIBER_BOT_CONFIGURATION)
 
     with pytest.raises(ValueError) as exc:
-        viber.parse_request("dsfdfdsf\#")
+        viber.parse_request(r"dsfdfdsf\#")
 
 
 def test_parse_request_unicode():
