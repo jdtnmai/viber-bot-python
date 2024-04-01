@@ -8,7 +8,8 @@ WELCOME_HELP_MESSAGE = "Labas! Aš esu FoxBot. Mano darbas padėti atsakyti į J
                 6. tvirtinu - jeigu į gautą atsakymą atasakysite šia komnada, kai kitą kartą klausite to pačio klausimo, gausite patvirtintą atsakymą.\n\n\
         SVARBU: Jeigu aš jums uždaviau klausimą, į jį pradėkite atskainėti nauja žinutę.\n\
                 Atsakymą gali sudaryti daugiau nei viena žinutė.\n\
-                Pabaigus atsakymą atsiųskite žinutę xxx"
+                Pabaigus atsakymą atsiųskite žinutę xxx\n\
+                Jeigu norite pradėti nuo pradžių siųskite labas."
 
 QUESTION_PREFIX = "Prašau atsakyti į klausimą :)\n"
 UNANSWERED_QUESTIONS_PREFIX = "Neatsakyti klausimai:\n"

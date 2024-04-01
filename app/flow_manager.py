@@ -17,6 +17,7 @@ from app.flows.flow_ask_question import (
     select_responder,
     send_question_to_responder,
 )
+from app.flows.flow_list_unanswered_questions import get_and_send_unanswered_questions
 from app.flows.flow_welcome_help import send_welcome_help_message
 from app.message_utils import MessageBuilder, MessageSenger
 from app.data_models import (
@@ -119,27 +120,7 @@ class FlowManager:
             )
 
     def list_unanswered_question_flow(self):
-        unanswered_questions = get_questions_without_approved_answers(self.session)
-        message_text = UNANSWERED_QUESTIONS_PREFIX + "\n".join(
-            [f"{idx}. {q.question_text}" for idx, q in enumerate(unanswered_questions)]
-        )
-        unanswered_question_ids = {
-            idx: q.question_text for idx, q in enumerate(unanswered_questions)
-        }
-        tracking_data = TrackingData(
-            system_message=True,
-            flow=IntentionName.list_unanswered_question,
-            unanswered_question_ids=unanswered_question_ids,
-        )
-        viber_message = MessageBuilder.build_viber_message(
-            message_text=message_text,
-            tracking_data=asdict(tracking_data),
-        )
-        MessageSenger.send_viber_messagess(
-            viber=self.viber,
-            recipient_viber_id=self.viber_message.sender_viber_id,
-            viber_message=viber_message,
-        )
+        get_and_send_unanswered_questions(self.session, self.viber, self.viber_message)
 
     def review_flow(self):
         """
