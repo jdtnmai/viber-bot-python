@@ -1,4 +1,5 @@
 import json
+from app.data_classes import Intention, IntentionName, ViberMessage
 from logger import logger
 
 
@@ -29,3 +30,32 @@ def parse_tracking_data(message_dict):
 def get_message_media(message_dict):
     media_link = message_dict.get("media", "")
     return media_link
+
+
+def parse_viber_request(viber_request) -> ViberMessage:
+    if isinstance(viber_request, ViberMessage):
+        return viber_request
+    else:
+        message_dict = viber_request.message.to_dict()
+        return ViberMessage(
+            sender_viber_id=viber_request.sender.id,
+            message_text=message_dict["text"],
+            media_link=get_message_media(message_dict),
+            tracking_data=parse_tracking_data(message_dict),
+        )
+
+
+def get_message_intention(message_text):
+    text = message_text.lower()
+    intentions = Intention()
+    intentions.ask_question = (
+        text.lower().strip().startswith(IntentionName.ask_question)
+    )
+    intentions.list_unanswered_question = (
+        text.lower().strip().startswith(IntentionName.list_unanswered_question)
+    )
+    intentions.welcome_help = (
+        text.lower().strip().startswith(IntentionName.welcome_help)
+    )
+
+    return intentions

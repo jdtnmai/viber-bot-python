@@ -1,16 +1,10 @@
-from typing import Tuple
 from app.flows.constants import (
-    ANSWER_PREFIX,
-    QUESTION_PREFIX,
     UNANSWERED_QUESTIONS_PREFIX,
-    WELCOME_HELP_MESSAGE,
 )
 from app.data_classes import (
     ConversationStatus,
-    Intention,
     IntentionName,
     TrackingData,
-    ViberMessage,
 )
 from app.flows.flow_accept_or_reject_answer import (
     approve_answer_and_close_conversation,
@@ -23,26 +17,19 @@ from app.flows.flow_ask_question import (
     select_responder,
     send_question_to_responder,
 )
+from app.flows.flow_welcome_help import send_welcome_help_message
 from app.message_utils import MessageBuilder, MessageSenger
 from app.data_models import (
-    ChatBotUser,
-    Conversation,
-    Question,
-    create_answer,
-    create_new_conversation,
     create_question,
-    get_answer,
     get_conversation_by_id,
-    get_question,
     get_questions_without_approved_answers,
-    get_user_by_user_id,
     get_user_by_viber_id,
-    get_users_not_in_active_pending_conversations,
-    update_answer,
     update_conversation,
 )
-from app.flows.flow_manager_helpers import get_message_media
-from app.flows.flow_manager_helpers import parse_tracking_data
+from app.flows.flow_manager_helpers import (
+    get_message_intention,
+    parse_viber_request,
+)
 
 from dataclasses import asdict
 
@@ -54,51 +41,11 @@ class FlowManager:
     def __init__(self, session, viber, viber_request):
         self.session = session
         self.viber = viber
-        self.viber_message = self.parse_viber_request(viber_request=viber_request)
-        self.intentions = self.get_message_intention(self.viber_message.message_text)
-
-    @staticmethod
-    def parse_viber_request(viber_request) -> ViberMessage:
-        if isinstance(viber_request, ViberMessage):
-            return viber_request
-        else:
-            message_dict = viber_request.message.to_dict()
-            return ViberMessage(
-                sender_viber_id=viber_request.sender.id,
-                message_text=message_dict["text"],
-                media_link=get_message_media(message_dict),
-                tracking_data=parse_tracking_data(message_dict),
-            )
-
-    @staticmethod
-    def get_message_intention(message_text):
-        text = message_text.lower()
-        intentions = Intention()
-        intentions.ask_question = (
-            text.lower().strip().startswith(IntentionName.ask_question)
-        )
-        intentions.list_unanswered_question = (
-            text.lower().strip().startswith(IntentionName.list_unanswered_question)
-        )
-        intentions.welcome_help = (
-            text.lower().strip().startswith(IntentionName.welcome_help)
-        )
-
-        return intentions
+        self.viber_message = parse_viber_request(viber_request=viber_request)
+        self.intentions = get_message_intention(self.viber_message.message_text)
 
     def welcome_help_flow(self):
-        welcome_help_message_text = WELCOME_HELP_MESSAGE
-        tracking_data = TrackingData(system_message=True)
-
-        viber_message = MessageBuilder.build_viber_message(
-            message_text=welcome_help_message_text,
-            tracking_data=asdict(tracking_data),
-        )
-        MessageSenger.send_viber_messagess(
-            viber=self.viber,
-            recipient_viber_id=self.viber_message.sender_viber_id,
-            viber_message=viber_message,
-        )
+        send_welcome_help_message(self.viber, self.viber_message)
 
     def ask_question_flow(self):
 
