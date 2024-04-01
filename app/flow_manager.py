@@ -12,6 +12,10 @@ from app.data_classes import (
     TrackingData,
     ViberMessage,
 )
+from app.flows.flow_accept_or_reject_answer import (
+    approve_answer_and_close_conversation,
+    handle_reject_response,
+)
 from app.flows.flow_answer_question import handle_responder_answer
 from app.flows.flow_ask_question import (
     get_asker,
@@ -135,6 +139,38 @@ class FlowManager:
                 viber_message=self.viber_message,
             )
 
+    def accept_answer_flow(self):
+
+        conversation = get_conversation_by_id(
+            self.session, self.viber_message.tracking_data["conversation_id"]
+        )
+        message_sender = get_user_by_viber_id(
+            self.session, self.viber_message.sender_viber_id
+        )
+        if self.viber_message.message_text.lower().strip().startswith("taip"):
+            """
+            answer approved
+            conversation status close
+            """
+            approve_answer_and_close_conversation(self.session, conversation)
+
+        elif self.viber_message.message_text.lower().strip().startswith("ne"):
+            """
+            reject answer
+            """
+
+            conversation = update_conversation(
+                self.session,
+                conversation_id=conversation.conversation_id,
+                responder_user_id=None,
+                answer_id=None,
+                status=ConversationStatus.active,
+            )
+
+            handle_reject_response(
+                self.session, self.viber, conversation, message_sender
+            )
+
     def list_unanswered_question_flow(self):
         unanswered_questions = get_questions_without_approved_answers(self.session)
         message_text = UNANSWERED_QUESTIONS_PREFIX + "\n".join(
@@ -157,76 +193,6 @@ class FlowManager:
             recipient_viber_id=self.viber_message.sender_viber_id,
             viber_message=viber_message,
         )
-
-    def accept_answer_flow(self):
-        conversation = get_conversation_by_id(
-            self.session, self.viber_message.tracking_data["conversation_id"]
-        )
-        message_sender = get_user_by_viber_id(
-            self.session, self.viber_message.sender_viber_id
-        )
-        if self.viber_message.message_text.lower().strip().startswith("taip"):
-            """
-            conversation status close
-            answer approved
-            """
-            update_answer(self.session, conversation.answer_id, approved=True)
-            conversation = update_conversation(
-                self.session,
-                conversation_id=conversation.conversation_id,
-                status=ConversationStatus.closed,
-            )
-        elif self.viber_message.message_text.lower().strip().startswith("ne"):
-            """
-            conversation status close
-            answer approved
-            """
-            conversation = update_conversation(
-                self.session,
-                conversation_id=conversation.conversation_id,
-                responder_user_id=None,
-                answer_id=None,
-                status=ConversationStatus.active,
-            )
-            responders = get_users_not_in_active_pending_conversations(self.session)
-            responders = [
-                candidate_responder
-                for candidate_responder in responders
-                if candidate_responder.user_id != message_sender.user_id
-            ]
-            if responders:
-
-                responder = responders.pop()
-
-                tracking_data = TrackingData(
-                    conversation_id=conversation.conversation_id,
-                    flow=IntentionName.ask_question,
-                )
-                question = get_question(self.session, conversation.question_id)
-
-                viber_message = MessageBuilder.build_viber_message(
-                    message_text=QUESTION_PREFIX + question.question_text,
-                    tracking_data=asdict(tracking_data),
-                )
-
-                MessageSenger.send_viber_messagess(
-                    viber=self.viber,
-                    recipient_viber_id=responder.viber_id,
-                    viber_message=viber_message,
-                )
-                conversation = update_conversation(
-                    self.session,
-                    conversation_id=conversation.conversation_id,
-                    responder_user_id=responder.user_id,
-                )
-
-            else:
-                conversation = update_conversation(
-                    self.session,
-                    conversation_id=conversation.conversation_id,
-                    status=ConversationStatus.pending,
-                    reset_responder_and_answer=True,
-                )
 
     def review_flow(self):
         """
