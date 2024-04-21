@@ -18,12 +18,12 @@ def get_and_send_unanswered_questions(session, viber, viber_message: ViberMessag
         flow=IntentionName.list_unanswered_question,
         unanswered_question_ids=unanswered_question_ids,
     )
-    viber_message = MessageBuilder.build_viber_message(
+    response_to_viber_message = MessageBuilder.build_viber_message(
         message_text=message_text,
         tracking_data=asdict(tracking_data),
     )
     MessageSenger.send_viber_messagess(
         viber=viber,
         recipient_viber_id=viber_message.sender_viber_id,
-        viber_message=viber_message,
+        viber_message=response_to_viber_message,
     )
