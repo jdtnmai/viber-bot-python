@@ -145,8 +145,16 @@ class FlowManager:
         )
 
     def accept_answer_to_unanswered_question_flow(self):
-        # make more sophisticated by asking to select qustion to answer. Send the number to confirm wiht the quesiton text.
+        # make more sophisticated by asking to select a question to answer. Send the number to confirm wiht the question text.
         # wait for answers until xxx.
+        """
+        1. we get a requset to list unanswered question.
+        2. we list unanswered questions
+        3. the user sends number of the question wants to answer
+        4. the bot sends the question.
+        5. the users replies and the bot appends messages until gets xxx.
+        6. then the bot replies that the answer was accepted.
+        """
 
         mapping = self.viber_message.tracking_data.get("unanswered_question_ids")
         question_number = extract_number_from_string(self.viber_message.message_text)

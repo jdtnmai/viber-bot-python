@@ -11,7 +11,7 @@ def get_and_send_unanswered_questions(session, viber, viber_message: ViberMessag
         [f"{idx}. {q.question_text}" for idx, q in enumerate(unanswered_questions)]
     )
     unanswered_question_ids = {
-        idx: q.question_text for idx, q in enumerate(unanswered_questions)
+        idx: q.question_id for idx, q in enumerate(unanswered_questions)
     }
     tracking_data = TrackingData(
         system_message=True,
