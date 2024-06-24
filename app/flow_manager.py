@@ -157,9 +157,12 @@ class FlowManager:
         """
 
         mapping = self.viber_message.tracking_data.get("unanswered_question_ids")
+        logger.debug(f"mapping, {mapping}")
         question_number = extract_number_from_string(self.viber_message.message_text)
+        logger.debug(f"question number {question_number}")
         if question_number is not None:
             question_id = mapping.get(question_number)
+            logger.debug(f"question id {question_id}")
             question = get_question(session=self.session, question_id=question_id)
             user = get_user_by_viber_id(
                 self.session, self.viber_message.sender_viber_id
