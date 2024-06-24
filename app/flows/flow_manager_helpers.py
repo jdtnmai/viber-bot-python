@@ -69,4 +69,4 @@ def extract_number_from_string(s):
         else:
             break  # Stop iterating when a non-digit character is encountered
     if number:
-        return int(number)
+        return str(int(number))
