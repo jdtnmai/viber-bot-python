@@ -210,6 +210,9 @@ class FlowManager:
         elif (tracking_flow == IntentionName.list_unanswered_question) and (
             self.viber_message.tracking_data.get("unanswered_question_ids") is not None
         ):
+            logger.debug(
+                f"self.viber_message.tracking_data {self.viber_message.tracking_data}"
+            )
             self.accept_answer_to_unanswered_question_flow()
 
         else:

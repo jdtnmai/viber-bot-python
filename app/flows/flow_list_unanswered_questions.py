@@ -3,6 +3,7 @@ from app.data_classes import IntentionName, TrackingData, ViberMessage
 from app.data_models import get_questions_without_approved_answers
 from app.flows.constants import UNANSWERED_QUESTIONS_PREFIX
 from app.message_utils import MessageBuilder, MessageSenger
+from logger import logger
 
 
 def get_and_send_unanswered_questions(session, viber, viber_message: ViberMessage):
@@ -17,6 +18,9 @@ def get_and_send_unanswered_questions(session, viber, viber_message: ViberMessag
         system_message=True,
         flow=IntentionName.list_unanswered_question,
         unanswered_question_ids=unanswered_question_ids,
+    )
+    logger.debug(
+        f"get_and_send_unanswered_questions tracking data {asdict(tracking_data)}"
     )
     response_to_viber_message = MessageBuilder.build_viber_message(
         message_text=message_text,
